@@ -46,6 +46,10 @@ The resulting list is sorted alphabetically.
 Return the length (the number of items) of an object.
 The argument may be a sequence (such as a string, bytes, tuple, list, or range) or a collection (such as a dictionary, set, or frozen set).
 
+### `map(function, iterable, ...)`
+
+Apply *function* to every item of *iterable* and return a list of the results.
+
 ### `range(stop)`
 
 ### `range(start, stop[, step])`
