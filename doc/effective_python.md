@@ -104,6 +104,41 @@ The second parameter to `get` is the default value to return in the case that th
 
 ### Item 19
 
+To avoid these problems, you should never use more than three variables when unpacking the multiple return values from a function.
+
 ### Item 20: Prefer raising exceptions to returning `None`
 
+The second, better way to reduce these errors is to never return `None` for special cases.
+Instead, raise an `Exception` up to the caller and have the caller deal with it.
+
 ### Item 21: Know how closures interact with variable scope
+
+### Item 22: Reduce visual noise with variable positional arguments
+
+Accepting a variable number of positional arguments can make a function call clearer and reduce visual noise.
+(These positional arguments are often called varargs for short, or star args, in reference to the conventional name for the parameter *args.)
+
+### Item 23: Provide optional behavior with keyword arguments
+
+As in most other programming languages, in Python you may pass arguments by position when calling a function:
+```python
+def remainder(number, divisor):
+    return number % divisor
+
+assert remainder(20, 7) == 6
+```
+All normal arguments to Python functions can also be passed by keyword, where the name of the argument is used in an assignment within the parentheses of a function call.
+The keyword arguments can be passed in any order as long as all of the required positional arguments are specified.
+You can mix and match keyword and positional arguments.
+
+Positional arguments must be specified before keyword arguments:
+
+And if you'd like for a function to receive any named keyword argument, you can use the `**kwargs` catch-all parameter to collect those arguments into a dict that you can then process
+
+### Item 24: Use `None` and docstings to specify dynamic default arguments
+
+A default argument value is evaluated only once per module load, which usually happens when a program starts up.
+
+The convention for achieving the desired result in Python is to provide a default value of `None` and to document the actual behavior in the docstring.
+
+When your code sees the argument value `None`, you allocate the default value accordingly:
