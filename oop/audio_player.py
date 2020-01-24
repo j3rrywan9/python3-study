@@ -1,3 +1,6 @@
+import abc
+
+
 class AudioFile:
     def __init__(self, filename):
         if not filename.endswith(self.ext):
@@ -38,3 +41,24 @@ class FlacFile:
 
     def play(self):
         print("playing {} as flac".format(self.filename))
+
+
+# Abstract Base Class
+class MediaLoader(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def play(self):
+        pass
+
+    @property
+    @abc.abstractmethod
+    def ext(self):
+        pass
+
+    @classmethod
+    def __subclasshook__(cls, c):
+        if cls is MediaLoader:
+            attrs = set(dir(c))
+            if set(cls.__abstractmethods__) <= attrs:
+                return True
+
+        return NotImplemented
