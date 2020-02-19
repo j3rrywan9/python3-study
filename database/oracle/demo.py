@@ -2,7 +2,7 @@
 
 from enum import EnumMeta
 from pprint import pprint
-from oracle.enums import DBBlockSize, TablespaceType
+from database.oracle.enums import DBBlockSize, TablespaceType
 
 
 def enum_has_attribute(enum_cls, attribute):
