@@ -1,4 +1,9 @@
+.DS_Store
 .idea/
+.vscode
+
+# Python 3 bytecode cache
+__pycache__
 
 # virtualenv
 venv
