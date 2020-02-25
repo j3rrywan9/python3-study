@@ -142,3 +142,38 @@ A default argument value is evaluated only once per module load, which usually h
 The convention for achieving the desired result in Python is to provide a default value of `None` and to document the actual behavior in the docstring.
 
 When your code sees the argument value `None`, you allocate the default value accordingly:
+
+### Item 25: Enforce clarity with keyword-only and positional-only arguments
+
+### Item 26: Define function decorators with `functools.wraps`
+
+Python has special syntax for decorators that can be applied to functions.
+A decorator has the ability to run additional code before and after each call to a function it wraps.
+This means decorators can access and modify input arguments, return values, and raised exceptions.
+This functionality can be useful for enforcing semantics, debugging, registering functions, and more.
+
+The solution is to use the `wraps` helper function from the `functools` built-in module.
+This is a decorator that helps you write decorators.
+When you apply it to the `wrapper` function, it copies all of the important metadata about the inner function to the outer function:
+
+## Comprehensions and Generators
+
+### Item 27: Use comprehensions instead of `map` and `filter`
+
+Python provides compact syntax for deriving a new `list` from another sequence or iterable.
+These expressions are called *list comprehensions*.
+
+## Classes and Interfaces
+
+### Item 37
+
+### Item 38: Accept functions instead of classes for simple interfaces
+
+Many of Python's built-in APIs allow you to customize behavior by passing in a function.
+These hooks are used by APIs to call back your code while they execute.
+For example, the `list` type's `sort` method takes an optional `key` argument that's used to determine each index's value for sorting.
+
+### Item 39: Use `@classmethod` polymorphism to construct objects generically
+
+Polymorphism enables multiple classes in a hierarchy to implement their own unique versions of a method.
+This means that many classes can fulfill the same interface or abstract base class while providing different functionality.
