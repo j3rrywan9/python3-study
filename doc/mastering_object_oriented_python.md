@@ -42,6 +42,34 @@ Instead, they're used by external tools to examine the code for improper use of 
 
 ## The `__init__()` Method
 
+### The implicit superclass - `object`
+
+Each Python class definition has an implicit superclass: `object`.
+It's a very simple class definition that does almost nothing.
+
+When we define our own class, `object` is the superclass.
+
+We can see that a class is an object of the class named `type` and that the base class for our new class is the class named `object`.
+As we look at each method, we also take a look at the default behavior inherited from `object`.
+In some cases, the superclass special method's behavior will be exactly what we want.
+In other cases, we'll need to override the behavior of the special method.
+
+### The base class object `__init__()` method
+
+The superclass of all classes, `object`, has a default implementation of `__init__()` that amounts to `pass`.
+We aren't required to implement `__init__()`.
+If we don't implement it, then no instance variables will be created when the object is created.
+In some cases, this default behavior is acceptable.
+
+### Implementing `__init__()` in a superclass
+
+We initialize an object by implementing the `__init__()` method.
+When an object is created, Python first creates an empty object and then calls the `__init__()` method to set the state of the new object.
+This method generally creates the object's instance variables and performs any other one-time processing.
+
+The leading `_` in the name is a suggestion to someone reading the class that the `_points()` method is an implementation detail, subject to change in a future implementation.
+This can help to reveal which methods are part of a public interface and which are details that aren't intended for general use by other classes.
+
 ### Composite objects
 
 A composite object can also be called a **container**.
