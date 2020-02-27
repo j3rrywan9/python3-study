@@ -70,6 +70,35 @@ This method generally creates the object's instance variables and performs any o
 The leading `_` in the name is a suggestion to someone reading the class that the `_points()` method is an implementation detail, subject to change in a future implementation.
 This can help to reveal which methods are part of a public interface and which are details that aren't intended for general use by other classes.
 
+### Leveraging `__init__()` via a factory function
+
+In Python, there are two common approaches to factories, as follows:
+* We define a function that creates  objects of the required classes.
+* We define a class that has methods for creating objects.
+This is the **Factory** design pattern, as described in books on object-oriented design patterns.
+
+In Python, a class isn't required to create an object factory, but this can be a good idea when there are related factories or factories that are complex.
+One of the strengths of Python is that we're not forced to use a class hierarchy when a simple function might do just as well.
+
+The advantage of class definitions is code reuse via inheritance.
+The purpose of a factory class is to encapsulate the complexities of object construction in a way that's extensible.
+If we have a factory class, we can add subclasses when extending the target class hierarchy.
+This can give us polymorphic factory classes; different factory class definitions can have the same method signatures and can be used interchangeably.
+
+If the alternative factory definitions don't actually reuse any code, then a class hierarchy won't be as helpful in Python.
+We can simply use functions that have the same signatures.
+
+#### Faulty factory design and the vague else clause
+
+#### Simplicity and consistency using `elif` sequences
+
+#### Simplicity and consistency using mapping and class objects
+
+### Implementing `__init__()` in each subclass
+
+This often requires some common initialization of a superclass as well as subclass-specific initialization.
+We need to follow the **Don't Repeat Yourself (DRY)** principle to keep the code from getting cloned into each of the subclasses.
+
 ### Composite objects
 
 A composite object can also be called a **container**.
