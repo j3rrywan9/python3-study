@@ -144,11 +144,11 @@ This is the time to think about grouping both variables and functions into a cla
 Python gives us the `property` keyword to make methods that look like attributes.
 We can therefore write our code to use direct member access, and if we ever unexpectedly need to alter the implementation to do some calculation when getting or setting that attribute's value, we can do so without changing the interface.
 
-### Properties in detail
+#### Properties in detail
 
-### Decorators - another way to create properties
+#### Decorators - another way to create properties
 
-### Deciding when to use properties
+#### Deciding when to use properties
 
 Technically, in Python, data, properties, and methods are all attributes on a class.
 
@@ -161,3 +161,21 @@ Once confirming that an attribute is not an action, we need to decide between st
 In general, always use a standard attribute until you need to control access to that property in some way.
 In either case, your attribute is usually a noun.
 The only difference between an attribute and a property is that we can invoke custom actions automatically when a property is retrieved, set, or deleted.
+
+Let's look at a more realistic example.
+A common need for custom behavior is caching a value that is difficult to calculate or expensive to look up (requiring, for example, a network request or database query).
+The goal is to store the value locally to avoid repeated calls to the expensive calculation.
+
+Custom getters are also useful for attributes that need to be calculated on the fly, based on other object attributes.
+
+Custom setters are useful for validation, as we've already seen, but they can also be used to proxy a value to another location.
+
+### Manager objects
+
+#### Removing duplicate code
+
+But what should we do instead of code duplication?
+The simplest solution is often to move the code into a function that accepts parameters to account for whatever parts are different.
+This isn't a terribly object-oriented solution, but it is frequently optimal.
+
+#### In practice
