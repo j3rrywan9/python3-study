@@ -179,3 +179,61 @@ The simplest solution is often to move the code into a function that accepts par
 This isn't a terribly object-oriented solution, but it is frequently optimal.
 
 #### In practice
+
+## Python Data Structures
+
+In this chapter, we'll discuss the object-oriented features of these data structures, when they should be used instead of a regular class, and when they should not be used.
+
+### Empty objects
+
+It has been stressed throughout this book that classes and objects should only be used when you want to specify both data and behaviors.
+The main reason to write an empty class is to quickly block something out, knowing we'll come back later to add behavior.
+It is much easier to adapt behaviors to a class than it is to replace a data structure with an object and change all references to it.
+Therefore, it is important to decide from the outset whether the data is just data, or whether it is an object in disguise.
+Once that design decision is made, the rest of the design naturally falls into place.
+
+### Tuples and named tuples
+
+Unpacking is a very useful feature in Python.
+We can group variables together to make storing and passing them around simpler, but the moment we need to access all of them, we can unpack them into separate variables.
+
+#### Named tuples
+
+If we do not need to add behavior to the object, and we know in advance which attributes we need to store, we can use a named tuple.
+Named tuples are tuples with attitude.
+They are a great way to group read-only data together.
+
+Constructing a named tuple takes a bit more work than a normal tuple.
+
+### Dataclasses
+
+### Dictionaries
+
+Dictionaries are incredibly useful containers that allow us to map objects directly to other objects.
+
+We can, of course, catch the `KeyError` and handle it.
+But we have other options.
+Remember, dictionaries are objects, even if their primary purpose is to hold other objects.
+As such, they have several behaviors associated with them.
+One of the most useful of these methods is the `get` method;
+it accepts a key as the first parameter and an optional default value if the key doesn't exist:
+```python
+>>> print(stocks.get("RIM"))
+None
+>>> stocks.get("RIM", "NOT FOUND")
+'NOT FOUND'
+```
+
+Three other very useful dictionary methods are `keys()`, `values()`, and `items()`.
+The first two return an iterator over all the keys and all the values in the dictionary.
+We can use these like lists or in for loops if we want to process all the keys or values.
+The `items()` method is probably the most useful;
+it returns an iterator over tuples of `(key, value)` pairs for every item in the dictionary.
+This works great with tuple unpacking in a `for` loop to loop over associated keys and values.
+
+Objects that are **hashable** basically have a defined algorithm that converts the object into a unique integer value for rapid lookup in the dictionary.
+This hash is what is actually used to find values in a dictionary.
+
+#### Dictionary use cases
+
+#### Using `defaultdict`
