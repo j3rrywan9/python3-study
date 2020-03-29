@@ -237,3 +237,21 @@ This hash is what is actually used to find values in a dictionary.
 #### Dictionary use cases
 
 #### Using `defaultdict`
+
+### Lists
+
+Lists are the least object-oriented of Python's data structures.
+While lists are, themselves, objects, there is a lot of syntax in Python to make using them as painless as possible.
+Unlike many other object-oriented languages, lists in Python are simply available.
+We don't need to import them and rarely need to call methods on them.
+We can loop over a list without explicitly requesting an iterator object, and we can construct a list (as with a dictionary) with custom syntax.
+Further, list comprehensions and generator expressions turn them into a veritable Swiss Army knife of computing functionality.
+
+#### Sorting lists
+
+Without any parameters, `sort` will generally do as expected.
+
+If we want to place objects we define ourselves into a list and make those objects sortable, we have to do a bit more work.
+The special `__lt__`  method, which stands for less than, should be defined on the class to make instances of that class comparable.
+The `sort` method on the list will access this method on each object to determine where it goes in the list.
+This method should return `True` if our class is somehow less than the passed parameter, and `False` otherwise.
