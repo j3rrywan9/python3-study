@@ -27,3 +27,30 @@ class TablespaceType(Enum):
     PERMANENT = 'PERMANENT'
     TEMPORARY = 'TEMPORARY'
     UNDO = 'UNDO'
+
+
+@unique
+class DatafilesMigrationOption(Enum):
+    """Datafiles migration options."""
+
+    ALL = 'all'
+    NO = 'no'
+    PARTIAL = 'partial'
+
+    @staticmethod
+    def parse_str(option):
+        """
+        Parse specified option as enum.
+
+        :param option: Option to be parsed
+        :type option: str
+        :return: DatafilesMigrationOption enum
+        :rtype: DatafilesMigrationOption
+        """
+        for _, enum in DatafilesMigrationOption.__members__.items():
+            if enum.value == option:
+                return enum
+        raise Exception("Invalid datafiles migration option: '{}', valid"
+                        " options are: {}"
+                        .format(option,
+                                [e.value for e in DatafilesMigrationOption]))
