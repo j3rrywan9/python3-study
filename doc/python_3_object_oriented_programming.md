@@ -255,3 +255,40 @@ If we want to place objects we define ourselves into a list and make those objec
 The special `__lt__`  method, which stands for less than, should be defined on the class to make instances of that class comparable.
 The `sort` method on the list will access this method on each object to determine where it goes in the list.
 This method should return `True` if our class is somehow less than the passed parameter, and `False` otherwise.
+
+### Sets
+
+In Python, sets can hold any hashable object, not just numbers.
+Hashable objects are the same objects that can be used as keys in dictionaries; so again, lists and dictionaries are out.
+Like mathematical sets, they can store only one copy of each object.
+
+There is no built-in syntax for an empty set as there is for lists and dictionaries; we create a set using the `set()` constructor.
+However, we can use the curly braces (borrowed from dictionary syntax) to create a set, so long as the set contains values.
+
+Sets are inherently unordered due to a hash-based data structure for efficiency.
+Because of this lack of ordering, sets cannot have items looked up by index.
+The primary purpose of a set is to divide the world into two groups: things that are in the set, and things that are not in the set.
+It is easy to check whether an item is in a set or to loop over the items in a set, but if we want to sort or order them, we have to convert the set to a list.
+
+### Extending built-in functions
+
+When we have a built-in container object that we want to add functionality to, we have two options.
+We can either create a new object, which holds that container as an attribute (composition), or we can subclass the built-in object and add or adapt methods on it to do what we want (inheritance).
+
+Composition is usually the best alternative if all we want to do is use the container to store some objects using that container's features.
+That way, it's easy to pass that data structure into other methods and they will know how to interact with it.
+But we need to use inheritance if we want to change the way the container actually works.
+
+Yes, lists are objects.
+All that special non-object-oriented looking syntax we've been looking at for accessing lists or dictionary keys, looping over containers, and similar tasks, is actually *syntactic sugar* that maps to an object-oriented paradigm underneath.
+
+Python programmers agree that the non-object-oriented syntax is easier both to read and to write.
+Yet all of the preceding Python syntaxes map to object-oriented methods underneath the hood.
+These methods have special names (with double-underscores before and after) to remind us that there is a better syntax out there.
+However, it gives us the means to override these behaviors.
+
+So, to get back to the earlier point about when we would want to use composition versus inheritance: if we need to somehow change any of the methods on the class, including the special methods, we definitely need to use inheritance.
+If we used composition, we could write methods that perform the validation or alterations and ask the caller to use those methods, but there is nothing stopping them from accessing the property directly.
+
+Often, the need to extend a built-in data type is an indication that we're using the wrong sort of data type.
+It is not always the case, but if we are looking to extend a built-in, we should carefully consider whether or not a different data structure would be more suitable.
