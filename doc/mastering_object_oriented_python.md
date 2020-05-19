@@ -134,3 +134,31 @@ class Deck:
 Generally, a **Facade** design pattern or **wrapper** class contains methods that delegate the work to the underlying implementation class.
 This delegation can become wordy when a lot of features are provided.
 For a sophisticated collection, we may wind up delegating a large number of methods to the wrapped object.
+
+### Complex composite object
+
+#### Complete composite object initialization
+
+Ideally, the `__init__()` initializer method will create a complete instance of an object.
+This is a bit more complex when creating a complete instance of a container that contains an internal collection of other objects.
+It'll be helpful if we can build this composite in a single step.
+
+It's common to have both a method to incrementally accrete items, as well as the initializer special method, which can load all of the items in one step.
+
+### Stateless objects without `__init__()`
+
+The following is an example of a degenerate class that doesn't need an `__init__()` method.
+It's a common design pattern for **Strategy** objects.
+A Strategy object is plugged into some kind of master or owner object to implement an algorithm or decision.
+The Strategy object often depends on data in the master object; the Strategy object may not have any data of its own.
+We often design strategy classes to follow the Flyweight design pattern so we can avoid internal storage in the strategy instance.
+All values can be provided to a Strategy object as method argument values.
+In some cases, a strategy object can be stateless; in this instance, it is more a collection of method functions than anything else.
+
+### Some additional class definitions
+
+### Multi-strategy `__init__()`
+
+We'll look at two design patterns that offer multiple ways to build an object.
+One design pattern uses a complex `__init__()` method with multiple strategies for initialization.
+
