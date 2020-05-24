@@ -50,6 +50,22 @@ The argument may be a sequence (such as a string, bytes, tuple, list, or range) 
 
 Apply *function* to every item of *iterable* and return a list of the results.
 
+### `max(iterable[, key])`
+
+Return the largest item in an iterable.
+
+If one positional argument is provided, *iterable* must be a non-empty iterable (such as a non-empty string, tuple or list).
+The largest item in the iterable is returned.
+
+### `max(arg1, arg2, *args[, key])`
+
+Return the largest of two or more arguments.
+
+If two or more positional arguments are provided, the largest of the positional arguments is returned.
+
+The optional *key* argument specifies a one-argument ordering function like that used for `list.sort()`.
+The *key* argument, if supplied, must be in keyword form (for example, `max(a,b,c,key=func)`).
+
 ### `range(stop)`
 
 ### `range(start, stop[, step])`
