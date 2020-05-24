@@ -31,6 +31,12 @@ The default `dir()` mechanism behaves differently with different types of object
 
 The resulting list is sorted alphabetically.
 
+### `enumerate(sequence, start=0)`
+
+Return an enumerate object.
+*sequence* must be a sequence, an iterator, or some other object which supports iteration.
+The `next()` method of the iterator returned by `enumerate()` returns a tuple containing a count (from *start* which defaults to 0) and the values obtained from iterating over sequence:
+
 ### `filter(function, iterable)`
 
 ### `getattr(object, name[, default])`
