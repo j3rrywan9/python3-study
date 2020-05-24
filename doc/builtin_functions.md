@@ -76,6 +76,11 @@ The *key* argument, if supplied, must be in keyword form (for example, `max(a,b,
 
 ### `range(start, stop[, step])`
 
+### `reversed(seq)`
+
+Return a reverse iterator.
+*seq* must be an object which has a `__reversed__()` method or supports the sequence protocol (the `__len__()` method and the `__getitem__()` method with integer arguments starting at 0).
+
 ### `xrange(stop)`
 
 ### `xrange(start, stop[, step])`
