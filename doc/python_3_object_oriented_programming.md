@@ -292,3 +292,63 @@ If we used composition, we could write methods that perform the validation or al
 
 Often, the need to extend a built-in data type is an indication that we're using the wrong sort of data type.
 It is not always the case, but if we are looking to extend a built-in, we should carefully consider whether or not a different data structure would be more suitable.
+
+## Python Object-Oriented Shortcuts
+
+### Python built-in functions
+
+There are numerous functions in Python that perform a task or calculate a result on certain types of objects without being methods on the underlying class.
+They usually abstract common calculations that apply to multiple types of classes.
+This is duck typing at its best;
+these functions accept objects that have certain attributes or methods, and are able to perform generic operations using those methods.
+We've used many of the built-in functions already, but let's quickly go through the important ones and pick up a few neat tricks along the way.
+
+#### The `len()` function
+
+#### Reversed
+
+The `reversed()` function takes any sequence as input, and returns a copy of that sequence in reverse order.
+It is normally used in for loops when we want to loop over items from back to front.
+
+Similar to `len`, `reversed` calls the `__reversed__()` function on the class for the parameter.
+If that method does not exist, `reversed` builds the reversed sequence itself using calls to `__len__` and `__getitem__`, which are used to define a sequence.
+
+#### Enumerate
+
+The for loop doesn't provide us with indexes, but the `enumerate` function gives us something better: it creates a sequence of tuples, where the first object in each tuple is the index and the second is the original item.
+
+#### File I/O
+
+#### Placing it in context
+
+If we run `dir` on a file-like object, we see that it has two special methods named `__enter__` and `__exit__`.
+These methods turn the file object into what is known as a **context manager**.
+Basically, if we use a special syntax called the with statement, these methods will be called before and after nested code is executed.
+On file objects, the `__exit__` method ensures the file is closed, even if an exception is raised.
+We no longer have to explicitly manage the closing of the file.
+
+The `with` statement is used in several places in the standard library, where start up or cleanup code needs to be executed.
+
+### An alternative to method overloading
+
+When calling the function, these positional arguments must be specified in order, and none can be missed or skipped.
+
+Any type of object can be passed as an argument: an object, a container, a primitive, even functions and classes.
+
+#### Default arguments
+
+If we want to make an argument optional, rather than creating a second method with a different set of arguments, we can specify a default value in a single method, using an equals sign.
+If the calling code does not supply this argument, it will be assigned a default value.
+However, the calling code can still choose to override the default by passing in a different value.
+
+With so many options, it may seem hard to pick one, but if you think of the positional arguments as an ordered list, and keyword arguments as sort of like a dictionary, you'll find that the correct layout tends to fall into place.
+If you need to require the caller to specify an argument, make it mandatory;
+if you have a sensible default, then make it a keyword argument.
+Choosing how to call the method normally takes care of itself, depending on which values need to be supplied, and which can be left at their defaults.
+
+#### Variable argument lists
+
+We can also accept arbitrary keyword arguments.
+These arrive in the function as a dictionary.
+They are specified with two asterisks (as in `**kwargs`) in the function declaration.
+This tool is commonly used in configuration setups.
