@@ -24,7 +24,3 @@ class Solution(object):
             R *= nums[i]
 
         return answer
-
-
-if __name__ == '__main__':
-    print(Solution().product_except_self([1, 2, 3, 4]))
