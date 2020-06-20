@@ -23,9 +23,3 @@ class Solution(object):
                 curr_string += char
 
         return curr_string
-
-
-if __name__ == '__main__':
-    print(Solution().decode_string('3[a]2[bc]'))
-    print(Solution().decode_string('3[a2[c]]'))
-    print(Solution().decode_string('2[abc]3[cd]ef'))
