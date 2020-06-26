@@ -93,13 +93,93 @@ You can't change a string in place, but you can copy parts of strings to another
 
 To define a Python function, you type `def`, the function name, parentheses enclosing any input parameters to the function, and then finally, a colon (`:`).
 
+Even for a function with no parameters like this one,you still need the parentheses and the colon in its definition.
+The next line needs to be indented, just as you would indent code under an `if` statement.
+Python requires the `pass` statement to show that this function does nothing.
+
 ### Call a Function with Parentheses
 
 ### Arguments and Parameters
 
+The values you pass into the function when you call it are known as *arguments*.
+When you call a function with arguments, the values of those arguments are copied to their corresponding *parameters* inside the function.
+
+### `None` Is Useful
+
+`None` is a special Python value that holds a place when there is nothing to say.
+It is not the same as the boolean value `False`, although it looks false when evaluated as a boolean.
+
+To distinguish `None` from a boolean `False` value, use Python's `is` operator:
+
+This seems like a subtle distinction, but it's important in Python.
+You'll need `None` to distinguish a missing value from an empty value.
+
+### Positional Arguments
+
+Python handles function arguments in a manner that's very flexible, when compared to many languages.
+The most familiar types of arguments are *positional arguments*, whose values are copied to their corresponding parameters in order.
+
+Although very common, a downside of positional arguments is that you need to remember the meaning of each position.
+
+### Keyword Arguments
+
+To avoid positional argument confusion, you can specify arguments by the names of their corresponding parameters, even in a different order from their definition in the function:
+
+You can mix positional and keyword arguments.
+
+If you call a function with both positional and keyword arguments, the positional arguments need to come first.
+
+### Specify Default Parameter Values
+
+You can specify default values for parameters.
+The default is used if the caller does not provide a corresponding argument.
+
+### Explode/Gather Positional Arguments with `*`
+
+When used inside the function with a parameter, an asterisk groups a variable number of positional arguments into a single tuple of parameter values.
+
+This is useful for writing functions such as `print()` that accept a variable number of arguments.
+If your function has required positional arguments, as well, put them first;
+`*args` goes at the end and grabs all the rest:
+```python
+def print_more(required1, required2, *args):
+    print('Need this one:', required1)
+    print('Need this one too:', required2)
+    print('All the rest:', args)
+```
+
+### Explode/Gather Keyword Arguments with `**`
+
+You can use two asterisks (`**`) to group keyword arguments into a dictionary, where the argument names are the keys, and their values are the corresponding dictionary values.
+
+Inside the function, `kwargs` is a dictionary parameter.
+
+### Keyword-Only Arguments
+
+### Mutable and Immutable Arguments
+
 ### Docstrings
 
+You can attach documentation to a function definition by including a string at the beginning of the function body.
+This is the function's *docstring*:
+
+### Functions Are First-Class Citizens
+
+Functions are first-class citizens in Python.
+You can assign them to variables, use them as arguments to other functions, and return them from functions.
+
+In Python, those parentheses mean call this function.
+With no parentheses, Python just treats the function like any other object.
+That's because, like everything else in Python, it is an object:
+
+You can use functions as elements of lists, tuples, sets, and dictionaries.
+Functions are immutable, so you can also use them as dictionary keys.
+
 ### Inner Functions
+
+You can define a function within another function:
+
+An inner function can be useful when performing some complex task more than once within another function, to avoid loops or code duplication.
 
 ### Anonymous Functions: lambda
 
