@@ -188,19 +188,165 @@ You can use it instead of a normal tiny function.
 
 A lambda has zero or more comma-separated arguments, followed by a colon (`:`), and then the definition of the function.
 
+### Generators
+
+#### Generator Functions
+
+#### Generator Comprehensions
+
+### Decorators
+
+### Namespaces and Scope
+
 ### Use of `_` and `__` in Names
+
+### Recursion
+
+### Async Functions
+
+### Exceptions
+
+When things go south, Python uses exceptions: code that is executed when an associated error occurs.
+
+When you run code that might fail under some circumstances, you also need appropriate exception handlers to intercept any potential errors.
+
+It's good practice to add exception handling anywhere an exception might occur to let the user know what is happening.
+You might not be able to fix the problem, but at least you can note the circumstances and shut your program down gracefully.
+If an exception occurs in some function and is not caught there, it bubbles up until it is caught by a matching handler in some calling function.
+If you don't provide your own exception handler, Python prints an error message and some information about where the error occurred and then terminates the program, as demonstrated in the following snippet:
+
+#### Handle Errors with `try` and `except`
+
+#### Make Your Own Exceptions
+
+You can also define your own exception types to handle special situations that might arise in your own programs.
+
+An exception is a class.
+It is a child of the class `Exception`.
 
 ## Objects and Classes
 
-### Methods
+### Simple Objects
 
-### Initialization
+#### Define a Class with `class`
 
-### Get Help from Your Parent with `super()`
+To create a new object that no one has ever created before, you first define a *class* that indicates what it contains.
+
+To create your own custom object in Python, you first need to define a class by using the `class` keyword.
+
+You create an object from a class by calling the class name as though it were a function:
+```python
+a_cat = Cat()
+another_cat = Cat()
+```
+
+#### Attributes
+
+An *attribute* is a variable inside a class or object.
+During and after an object or class is created, you can assign attributes to it.
+An attribute can be any other object.
+
+#### Methods
+
+A *method* is a function in a class or object.
+
+#### Initialization
+
+If you want to assign object attributes at creation time, you need the special Python object initialization method `__init__()`:
+
+### Inheritance
+
+One solution is inheritance:creating a new class from an existing class, but with some additions or changes.
+It's a good way to reuse code.
+When you use inheritance, the new class can automatically use all the code from the old class but without you needing to copy any of it.
+
+#### Inherit from a Parent Class
+
+You define only what you need to add or change in the new class, and this overrides the behavior of the old class.
+The original class is called a *parent*, *superclass*, or *base class*;
+the new class is called a *child*, *subclass*, or *derived class*.
+
+You can check whether a class is derived from another class by using `issubclass()`:
+```python
+issubclass(Yugo, Car)
+```
+
+#### Override a Method
+
+As you just saw, a new class initially inherits everything from its parent class.
+Moving forward, you'll see how to replace or override a parent method.
+
+#### Add a Method
+
+The child class can also *add* a method that was not present in its parent class.
+
+#### Get Help from Your Parent with `super()`
+
+Use `super()` when the child is doing something its own way but still needs something from the parent (as in real life).
+
+#### Multiple Inheritance
+
+#### Mixins
+
+You may include an extra parent class in your class definition, but as a helper only.
+That is, it doesn't share any methods with the other parent classes, and avoids the method resolution ambiguity that I mentioned in the previous section.
+
+Such a parent class is sometimes called a *mixin* class.
+Uses might include "side" tasks like logging.
+
+### In `self` Defense
+
+### Attribute Access
+
+In Python, object attributes and methods are normally public, and you're expected to behave yourself (this is sometimes called a "consenting adults" policy).
+
+#### Direct Access
+
+#### Getters ans Setters
+
+#### Properties for Attribute Access
+
+#### Properties for Computed Values
+
+#### Name Mangling for Privacy
+
+Python has a naming convention for attributes that should not be visible outside of their class definition: begin with two underscores (`__`).
+
+#### Class and Object Attributes
 
 ### Method Types
 
+#### Instance Methods
+
+When you see an initial `self` argument in methods within a class definition, it's an *instance method*.
+These are the types of methods that you would normally write when creating your own classes.
+The first parameter of an instance method is `self`, and Python passes the object to the method when you call it.
+
+#### Class Methods
+
+In contrast, a *class method* affects the class as a whole.
+Any change you make to the class affects all of its objects.
+Within a class definition,a preceding `@classmethod` decorator indicates that that following function is a class method.
+Also, the first parameter to the method is the class itself.
+The Python tradition is to call the parameter `cls`, because `class` is a reserved word and can't be used here.
+
+#### Static Methods
+
+A third type of method in a class definition affects neither the class nor its objects;
+it's just in there for convenience instead of floating around on its own.
+It's a *static method*, preceded by a `@staticmethod` decorator, with no initial `self` or `cls` parameter.
+
+### Duck Typing
+
+### Magic Methods
+
+### Aggregation and Composition
+
 ### Dataclasses
+
+Many people like to create objects mainly to store data (as object attributes), not so much behavior (methods).
+You just saw how named tuples can be an alternative data store.
+Python 3.7 introduced *dataclasses*.
 
 ## Modules, Packages, and Goodies
 
