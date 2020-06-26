@@ -81,6 +81,16 @@ The *key* argument, if supplied, must be in keyword form (for example, `max(a,b,
 Return a reverse iterator.
 *seq* must be an object which has a `__reversed__()` method or supports the sequence protocol (the `__len__()` method and the `__getitem__()` method with integer arguments starting at 0).
 
+### `vars([object])`
+
+Return the `__dict__` attribute for a module, class, instance, or any other object with a `__dict__` attribute.
+
+Objects such as modules and instances have an updateable `__dict__` attribute;
+however, other objects may have write restrictions on their `__dict__` attributes (for example, new-style classes use a dictproxy to prevent direct dictionary updates).
+
+Without an argument, `vars()` acts like `locals()`.
+Note, the locals dictionary is only useful for reads since updates to the locals dictionary are ignored.
+
 ### `xrange(stop)`
 
 ### `xrange(start, stop[, step])`
