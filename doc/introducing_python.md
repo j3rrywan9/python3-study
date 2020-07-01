@@ -352,9 +352,35 @@ Python 3.7 introduced *dataclasses*.
 
 ### Modules and the `import` statement
 
+A *module* is just a file of any Python code.
+You don’t need to do anything special - any Python code can be used as a module by others.
+
 #### Import a Module
 
+The simplest use of the `import` statement is import *module*, where *module* is the name of another Python file, without the *.py* extension.
+
+#### Import a Module with Another Name
+
+#### Import Only What You Want from a Module
+
 ### Packages
+
+To allow Python applications to scale even more, you can organize modules into file and module hierarchies called *packages*.
+A package is just a subdirectory that contains *.py* files.
+And you can go more than one level deep, with directories inside those.
+
+#### The Module Search Path
+
+To see all the places that your Python interpreter looks, import the standard `sys` module and use its `path` list.
+This is a list of directory names and ZIP archive files that Python searches in order to find modules to import.
+
+That initial blank output line is the empty string '', which stands for the current directory.
+If '' is first in `sys.path`, Python looks in the current directory first when you try to import something:
+
+The first match will be used.
+This means that if you define a module named `random`and it's in the search path before the standard library, you won't be able to access the standard library's `random` now.
+
+#### Relative and Absolute Imports
 
 ### Goodies in the Python Standard Library
 
@@ -363,4 +389,30 @@ Python 3.7 introduced *dataclasses*.
 `defaultdict()` is similar, but specifies the default value for any new key up front, when the dictionary is created.
 Its argument is a function.
 
+#### Count Items with `Counter()`
+
 #### Order by Key with `OrderedDict()`
+
+#### Stack + Queue == deque
+
+A `deque` (pronounced *deck*) is a double-ended queue, which has features of both a stack and a queue.
+It's useful when you want to add and delete items from either end of a sequence.
+
+The function `popleft()` removes the left most item from the deque and returns it;
+`pop()` removes the rightmost item and returns it.
+
+## Wrangle and Mangle Data
+
+### Text Strings: Unicode
+
+### Text Strings: Regular Expression
+
+It's time to explore more complex pattern matching by using *regular expressions*.
+These are provided in the standard module `re`, which we'll import.
+You define a string *pattern* that you want to match, and the *source* string to match against.
+
+#### Find Exact Beginning Match with `match()`
+
+#### Find First Match with `search()`
+
+#### Find All Matches with `findall()`
