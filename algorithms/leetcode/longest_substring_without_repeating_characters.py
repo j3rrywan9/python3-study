@@ -21,9 +21,3 @@ class Solution(object):
             used_char[char] = index
 
         return max_length
-
-
-if __name__ == '__main__':
-    print(Solution().length_of_longest_substring('abcabcbb'))
-    print(Solution().length_of_longest_substring('bbbbb'))
-    print(Solution().length_of_longest_substring('pwwkew'))
