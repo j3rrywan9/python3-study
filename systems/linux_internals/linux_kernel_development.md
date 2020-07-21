@@ -16,7 +16,7 @@ Threads of execution, often shortened to threads, are the objects of activity wi
 Each thread includes a unique program counter, process stack, and set of processor registers.
 The kernel schedules individual threads, not processes.
 In traditional Unix systems, each process consists of one thread.
-In modern systems, however, multithreaded programs—those that consist of more than one thread — are common.
+In modern systems, however, multithreaded programs—those that consist of more than one thread - are common.
 As you will see later, Linux has a unique implementation of threads: It does not differentiate between threads and processes.
 To Linux, a thread is just a special kind of process.
 
@@ -281,3 +281,377 @@ The solution is to reparent a task's children on exit to either another process 
 
 With the process successfully reparented, there is no risk of stray zombie processes.
 The `init` process routinely calls `wait()` on its children, cleaning up any zombies assigned to it.
+
+## Process Scheduling
+
+## System Calls
+
+In any modern operating system, the kernel provides a set of interfaces by which processes running in user-space can interact with the system.
+These interfaces give applications controlled access to hardware, a mechanism with which to create new processes and communicate with existing ones, and the capability to request other operating system resources.
+The interfaces act as the messengers between applications and the kernel, with the applications issuing various requests and the kernel fulfilling them (or returning an error).
+The existence of these interfaces, and the fact that applications are not free to directly do whatever they want, is key to providing a stable system.
+
+### Communicating with the Kernel
+
+System calls provide a layer between the hardware and user-space processes.
+This layer serves three primary purposes.
+First, it provides an abstracted hardware interface for user-space.
+When reading or writing from a file, for example, applications are not concerned with the type of disk, media, or even the type of filesystem on which the file resides.
+Second, system calls ensure system security and stability.
+With the kernel acting as a middleman between system resources and user-space, the kernel can arbitrate access based on permissions, users, and other criteria.
+For example, this arbitration prevents applications from incorrectly using hardware, stealing other processes' resources, or otherwise doing harm to the system.
+Finally, a single common layer between user-space and the rest of the system allows for the virtualized system provided to processes.
+If applications were free to access system resources without the kernel's knowledge, it would be nearly impossible to implement multitasking and virtual memory, and certainly impossible to do so with stability and security.
+In Linux, system calls are the only means user-space has of interfacing with the kernel;
+they are the only legal entry point into the kernel other than exceptions and traps.
+Indeed, other interfaces, such as device files or `/proc`, are ultimately accessed via system calls.
+Interestingly, Linux implements far fewer system calls than most systems.
+This chapter addresses the role and implementation of system calls in Linux.
+
+### APIs, POSIX, and the C Library
+
+Typically, applications are programmed against an Application Programming Interface (API) implemented in user-space, not directly to system calls.
+This is important because no direct correlation is needed between the interfaces that applications make use of and the actual interface provided by the kernel.
+An API defines a set of programming interfaces used by applications.
+Those interfaces can be implemented as a system call, implemented through multiple system calls, or implemented without the use of system calls at all.
+The same API can exist on multiple systems and provide the same interface to applications while the implementation of the API itself can differ greatly from system to system.
+
+One of the more common application programming interfaces in the Unix world is based on the POSIX standard.
+Technically, POSIX is composed of a series of standards from the IEEE that aim to provide a portable operating system standard roughly based on Unix.
+Linux strives to be POSIX- and SUSv3-compliant where applicable.
+
+POSIX is an excellent example of the relationship between APIs and system calls.
+On most Unix systems, the POSIX-defined API calls have a strong correlation to the system calls.
+Indeed, the POSIX standard was created to resemble the interfaces provided by earlier Unix systems.
+On the other hand, some systems that are rather un-Unix, such as Microsoft Windows, offer POSIX-compatible libraries.
+
+The system call interface in Linux, as with most Unix systems, is provided in part by the C library.
+The C library implements the main API on Unix systems, including the standard C library and the system call interface.
+The C library is used by all C programs and, because of C's nature, is easily wrapped by other programming languages for use in their programs.
+The C library additionally provides the majority of the POSIX API.
+
+From the application programmer’s point of view, system calls are irrelevant;
+all the programmer is concerned with is the API.
+Conversely, the kernel is concerned only with the system calls;
+what library calls and applications make use of the system calls is not of the kernel's concern.
+Nonetheless, it is important for the kernel to keep track of the potential uses of a system call and keep the system call as general and flexible as possible.
+A meme related to interfaces in Unix is "Provide mechanism, not policy."
+In other words, Unix system calls exist to provide a specific function in an abstract sense.
+The manner in which the function is used is not any of the kernel's business.
+
+### syscalls
+
+System calls (often called *syscalls* in Linux) are typically accessed via function calls defined in the C library.
+They can define zero, one, or more arguments (inputs) and might result in one or more side effects, for example writing to a file or copying some data into a provided pointer.
+System calls also provide a return value of type `long` that signifies success or error — usually, although not always, a negative return value denotes an error.
+A return value of zero is usually (but again not always) a sign of success.
+The C library, when a system call returns an error, writes a special error code into the global `errno` variable.
+This variable can be translated into human-readable errors via library functions such as `perror()`.
+
+Finally, system calls have a defined behavior.
+For example, the system call `getpid()` is defined to return an integer that is the current process's PID.
+
+Note that the definition says nothing of the implementation.
+The kernel must provide the intended behavior of the system call but is free to do so with whatever implementation it wants as long as the result is correct.
+Of course, this system call is as simple as they come, and there are not too many other ways to implement it.
+
+#### System Call Numbers
+
+In Linux, each system call is assigned a syscall number.
+This is a unique number that is used to reference a specific system call.
+When a user-space process executes a system call, the syscall number identifies which syscall was executed;
+the process does not refer to the syscall by name.
+The syscall number is important;
+when assigned, it cannot change, or compiled applications will break.
+Likewise, if a system call is removed, its system call number cannot be recycled, or previously compiled code would aim to invoke one system call but would in reality invoke another.
+Linux provides a "not implemented" system call, `sys_ni_syscall()`, which does nothing except return `-ENOSYS`, the error corresponding to an invalid system call.
+This function is used to "plug the hole" in the rare event that a syscall is removed or otherwise made unavailable.
+
+The kernel keeps a list of all registered system calls in the system call table, stored in `sys_call_table`.
+This table is architecture;
+on x86-64 it is defined in `arch/i386/kernel/syscall_64.c`.
+This table assigns each valid syscall to a unique syscall number.
+
+#### System Call Performance
+
+System calls in Linux are faster than in many other operating systems.
+This is partly because of Linux's fast context switch times
+ entering and exiting the kernel is a streamlined and simple affair.
+The other factor is the simplicity of the system call handler and the individual system calls themselves.
+
+### System Call Handler
+
+It is not possible for user-space applications to execute kernel code directly.
+They cannot simply make a function call to a method existing in kernel-space because the kernel exists in a protected memory space.
+If applications could directly read and write to the kernel's address space, system security and stability would be nonexistent.
+
+Instead, user-space applications must somehow signal to the kernel that they want to execute a system call and have the system switch to kernel mode, where the system call can be executed in kernel-space by the kernel on behalf of the application.
+
+The mechanism to signal the kernel is a software interrupt: Incur an exception, and the system will switch to kernel mode and execute the exception handler.
+The exception handler, in this case, is actually the system call handler.
+The defined software interrupt on x86 is interrupt number 128, which is incurred via the `int $0x80` instruction.
+It triggers a switch to kernel mode and the execution of exception vector 128, which is the system call handler.
+The system call handler is the aptly named function `system_call()`.
+It is architecture-dependent;
+on x86-64 it is implemented in assembly in `entry_64.S`.
+Recently, x86 processors added a feature known as *sysenter*.
+This feature provides a faster, more specialized way of trapping into a kernel to execute a system call than using the int interrupt instruction.
+Support for this feature was quickly added to the kernel.
+Regardless of how the system call handler is invoked, however, the important notion is that somehow user-space causes an exception or trap to enter the kernel.
+
+#### Denoting the Correct System Call
+
+Simply entering kernel-space alone is not sufficient because multiple system calls exist, all of which enter the kernel in the same manner.
+Thus, the system call number must be passed into the kernel.
+On x86, the syscall number is fed to the kernel via the `eax` register.
+Before causing the trap into the kernel, user-space sticks in `eax` the number corresponding to the desired system call.
+The system call handler then reads the value from `eax`.
+Other architectures do something similar.
+
+#### Parameter Passing
+
+In addition to the system call number, most syscalls require that one or more parameters be passed to them.
+Somehow, user-space must relay the parameters to the kernel during the trap.
+The easiest way to do this is via the same means that the syscall number is passed: The parameters are stored in registers.
+On x86-32, the registers `ebx`, `ecx`, `edx`, `esi`, and `edi` contain, in order, the first five arguments.
+In the unlikely case of six or more arguments, a single register is used to hold a pointer to user-space where all the parameters are stored.
+
+The return value is sent to user-space also via register.
+On x86, it is written into the `eax` register.
+
+### System Call Implementation
+
+The actual implementation of a system call in Linux does not need to be concerned with the behavior of the system call handler.
+Thus, adding a new system call to Linux is relatively easy.
+The hard work lies in designing and implementing the system call;
+registering it with the kernel is simple.
+Let's look at the steps involved in writing a new system call for Linux.
+
+#### Implementing System Calls
+
+#### Verifying the Parameters
+
+System calls must carefully verify all their parameters to ensure that they are valid and legal.
+The system call runs in kernel-space, and if the user can pass invalid input into the kernel without restraint, the system's security and stability can suffer.
+
+### System Call Context
+
+#### Final Steps in Binding a System Call
+
+After the system call is written, it is trivial to register it as an official system call:
+1. Add an entry to the end of the system call table.
+This needs to be done for each architecture that supports the system call (which, for most calls, is all the architectures).
+The position of the syscall in the table, starting at zero, is its system call number.
+For example, the tenth entry in the list is assigned syscall number nine.
+1. For each supported architecture, define the syscall number in `<asm/unistd.h>`.
+1. Compile the syscall into the kernel image (as opposed to compiling as a module).
+This can be as simple as putting the system call in a relevant file in `kernel/`, such as `sys.c`, which is home to miscellaneous system calls.
+
+Although it is not explicitly specified, the system call is then given the next subsequent syscall number—in this case, 338.
+For each architecture you want to support, the system call must be added to the architecture's system call table.
+The system call does not need to receive the same syscall number under each architecture, as the system call number is part of the architecture's unique ABI.
+Usually, you would want to make the system call available to each architecture.
+Note the convention of placing the number in a comment every five entries;
+this makes it easy to find out which syscall is assigned which number.
+
+#### Accessing the System Call from User-Space
+
+## Kernel Data Structures
+
+## Interrupts and Interrupt Handlers
+
+A core responsibility of any operating system kernel is managing the hardware connected to the machine—hard drives and Blu-ray discs, keyboards and mice, 3D processors and wireless radios.
+To meet this responsibility, the kernel needs to communicate with the machine's individual devices.
+Given that processors can be orders of magnitudes faster than the hardware they talk to, it is not ideal for the kernel to issue a request and wait for a response from the significantly slower hardware.
+Instead, because the hardware is comparatively slow to respond, the kernel must be free to go and handle other work, dealing with the hardware only after that hardware has actually completed its work.
+
+How can the processor work with hardware without impacting the machine's overall performance?
+One answer to this question is *polling*.
+Periodically, the kernel can check the status of the hardware in the system and respond accordingly.
+Polling incurs overhead, however, because it must occur repeatedly regardless of whether the hardware is active or ready.
+A better solution is to provide a mechanism for the hardware to signal to the kernel when attention is needed.
+This mechanism is called an *interrupt*.
+In this chapter, we discuss interrupts and how the kernel responds to them, with special functions called *interrupt handlers*.
+
+### Interrupts
+
+Interrupts enable hardware to signal to the processor.
+For example, as you type, the keyboard controller (the hardware device that manages the keyboard) issues an electrical signal to the processor to alert the operating system to newly available key presses.
+These electrical signals are interrupts.
+The processor receives the interrupt and signals the operating system to enable the operating system to respond to the new data.
+Hardware devices generate interrupts asynchronously with respect to the processor clock — they can occur at any time.
+Consequently, the kernel can be interrupted at any time to process interrupts.
+
+An interrupt is physically produced by electronic signals originating from hardware devices and directed into input pins on an interrupt controller, a simple chip that multiplexes multiple interrupt lines into a single line to the processor.
+Upon receiving an interrupt, the interrupt controller sends a signal to the processor.
+The processor detects this signal and interrupts its current execution to handle the interrupt.
+The processor can then notify the operating system that an interrupt has occurred, and the operating system can handle the interrupt appropriately.
+
+Different devices can be associated with different interrupts by means of a unique value associated with each interrupt.
+This way, interrupts from the keyboard are distinct from interrupts from the hard drive.
+This enables the operating system to differentiate between interrupts and to know which hardware device caused which interrupt.
+In turn, the operating system can service each interrupt with its corresponding handler.
+These interrupt values are often called *interrupt request (IRQ)* lines.
+Each IRQ line is assigned a numeric value—for example, on the classic PC, IRQ 0 is the timer interrupt and IRQ 1 is the keyboard interrupt.
+Not all interrupt numbers, however, are so rigidly defined.
+Interrupts associated with devices on the PCI bus, for example, generally are dynamically assigned.
+Other non-PC architectures have similar dynamic assignments for interrupt values.
+The important notion is that a specific interrupt is associated with a specific device, and the kernel knows this.
+
+### Interrupt Handlers
+
+The function the kernel runs in response to a specific interrupt is called an interrupt handler or *interrupt service routine (ISR)*.
+Each device that generates interrupts has an associated interrupt handler.
+For example, one function handles interrupts from the system timer, whereas another function handles interrupts generated by the keyboard.
+The interrupt handler for a device is part of the device's *driver* - the kernel code that manages the device.
+
+In Linux, interrupt handlers are normal C functions.
+They match a specific prototype, which enables the kernel to pass the handler information in a standard way, but otherwise they are ordinary functions.
+What differentiates interrupt handlers from other kernel functions is that the kernel invokes them in response to interrupts and that they run in a special context called *interrupt context*.
+This special context is occasionally called *atomic context* because, as we shall see, code executing in this context is unable to block.
+In this book, we will use the term interrupt context.
+
+Because an interrupt can occur at any time, an interrupt handler can, in turn, be executed at any time.
+It is imperative that the handler runs quickly, to resume execution of the interrupted code as soon as possible.
+Therefore, while it is important to the hardware that the operating system services the interrupt without delay, it is also important to the rest of the system that the interrupt handler executes in as short a period as possible.
+
+At the very least, an interrupt handler's job is to acknowledge the interrupt's receipt to the hardware: Hey, hardware, I hear ya; now get back to work!
+Often, however, interrupt handlers have a large amount of work to perform.
+For example, consider the interrupt handler for a network device.
+On top of responding to the hardware, the interrupt handler needs to copy networking packets from the hardware into memory, process them, and push the packets down to the appropriate protocol stack or application.
+Obviously, this can be a lot of work, especially with today's gigabit and 10-gigabit Ethernet cards.
+
+### Top Halves vs Bottom Halves
+
+These two goals—that an interrupt handler execute quickly and perform a large amount of work — clearly conflict with one another.
+Because of these competing goals, the processing of interrupts is split into two parts, or halves.
+The interrupt handler is the *top half*.
+The top half is run immediately upon receipt of the interrupt and performs only the work that is time-critical, such as acknowledging receipt of the interrupt or resetting the hardware.
+Work that can be performed later is deferred until the *bottom half*.
+The bottom half runs in the future, at a more convenient time, with all interrupts enabled.
+
+### Registering an Interrupt Handler
+
+Interrupt handlers are the responsibility of the driver managing the hardware.
+Each device has one associated driver and, if that device uses interrupts (and most do), then that driver must register one interrupt handler.
+
+Drivers can register an interrupt handler and enable a given interrupt line for handling with the function `request_irq()`, which is declared in `<linux/interrupt.h>`:
+
+The first parameter, `irq`, specifies the interrupt number to allocate.
+For some devices, for example legacy PC devices such as the system timer or keyboard, this value is typically hard-coded.
+For most other devices, it is probed or otherwise determined programmatically and dynamically.
+
+The second parameter, `handler`, is a function pointer to the actual interrupt handler that services this interrupt.
+This function is invoked whenever the operating system receives the interrupt.
+```c
+typedef irqreturn_t (*irq_handler_t)(int, void *);
+```
+
+Note the specific prototype of the handler function: It takes two parameters and has a return value of `irqreturn_t`.
+
+#### Interrupt Handler Flags
+
+The third parameter, `flags`, can be either zero or a bit mask of one or more of the flags defined in `<linux/interrupt.h>`.
+Among these flags, the most important are:
+* IRQF_DISABLED - When set, this flag instructs the kernel to disable all interrupts when executing this interrupt handler.
+When unset, interrupt handlers run with all interrupts except their own enabled.
+Most interrupt handlers do not set this flag, as disabling all interrupts is bad form.
+Its use is reserved for performance-sensitive interrupts that execute quickly.
+This flag is the current manifestation of the SA_INTERRUPT flag, which in the past distinguished between “fast” and “slow” interrupts.
+* IRQF_SAMPLE_RANDOM - This flag specifies that interrupts generated by this device should contribute to the kernel entropy pool.
+The kernel entropy pool provides truly random numbers derived from various random events.
+If this flag is specified, the timing of interrupts from this device are fed to the pool as entropy.
+Do not set this if your device issues interrupts at a predictable rate (for example, the system timer) or can be influenced by external attackers (for example, a networking device).
+On the other hand, most other hardware generates interrupts at nondeterministic times and is, therefore, a good source of entropy.
+* IRQF_TIMER - This flag specifies that this handler processes interrupts for the system timer.
+* IRQF_SHARED - This flag specifies that the interrupt line can be shared among multiple interrupt handlers.
+Each handler registered on a given line must specify this flag; otherwise, only one handler can exist per line.
+More information on shared handlers is provided in a following section.
+
+The fourth parameter, `name`, is an ASCII text representation of the device associated with the interrupt.
+For example, this value for the keyboard interrupt on a PC is keyboard.
+These text names are used by `/proc/irq` and `/proc/interrupts` for communication with the user, which is discussed shortly.
+The fifth parameter, `dev`, is used for shared interrupt lines.
+When an interrupt handler is freed (discussed later), `dev` provides a unique cookie to enable the removal of only the desired interrupt handler from the interrupt line.
+Without this parameter, it would be impossible for the kernel to know which handler to remove on a given interrupt line.
+You can pass `NULL` here if the line is not shared, but you must pass a unique cookie if your interrupt line is shared.
+(And unless your device is old and crusty and lives on the ISA bus, there is a good chance it must support sharing.)
+This pointer is also passed into the interrupt handler on each invocation.
+A common practice is to pass the driver's device structure: This pointer is unique and might be useful to have within the handlers.
+
+On success, `request_irq()` returns zero.
+A nonzero value indicates an error, in which case the specified interrupt handler was not registered.
+A common error is `-EBUSY`, which denotes that the given interrupt line is already in use (and either the current user or you did not specify `IRQF_SHARED`).
+
+Note that `request_irq()` can sleep and therefore cannot be called from interrupt context or other situations where code cannot block.
+It is a common mistake to call `request_irq()` when it is unsafe to sleep.
+This is partly because of *why* `request_irq()` can block: It is indeed unclear.
+On registration, an entry corresponding to the interrupt is created in `/proc/irq`.
+The function `proc_mkdir()` creates new procfs entries.
+This function calls `proc_create()` to set up the new procfs entries, which in turn calls `kmalloc()` to allocate memory.
+
+#### An Interrupt Example
+
+#### Freeing an Interrupt Handler
+
+### Writing an Interrupt Handler
+
+#### Shared Handlers
+
+#### A Real-Life Interrupt Handler
+
+### Interrupt Context
+
+When executing an interrupt handler, the kernel is in *interrupt context*.
+Recall that process context is the mode of operation the kernel is in while it is executing on behalf of a process - for example, executing a system call or running a kernel thread.
+In process context, the `current` macro points to the associated task.
+Furthermore, because a process is coupled to the kernel in process context, process context can sleep or otherwise invoke the scheduler.
+
+Interrupt context, on the other hand, is not associated with a process.
+The `current` macro is not relevant (although it points to the interrupted process).
+Without a backing process, interrupt context cannot sleep - how would it ever reschedule?
+Therefore, you cannot call certain functions from interrupt context.
+If a function sleeps, you cannot use it from your interrupt handler - this limits the functions that one can call from an interrupt handler.
+I
+nterrupt context is time-critical because the interrupt handler interrupts other code.
+Code should be quick and simple.
+Busy looping is possible, but discouraged.
+This is an important point;
+always keep in mind that your interrupt handler has interrupted other code (possibly even another interrupt handler on a different line!).
+Because of this asynchronous nature, it is imperative that all interrupt handlers be as quick and as simple as possible.
+As much as possible, work should be pushed out from the interrupt handler and performed in a bottom half, which runs at a more convenient time.
+
+### Implementing Interrupt Handlers
+
+Perhaps not surprising, the implementation of the interrupt handling system in Linux is architecture-dependent.
+The implementation depends on the processor, the type of interrupt controller used, and the design of the architecture and machine.
+
+A device issues an interrupt by sending an electric signal over its bus to the interrupt controller.
+If the interrupt line is enabled (they can be masked out), the interrupt controller sends the interrupt to the processor.
+In most architectures, this is accomplished by an electrical signal sent over a special pin to the processor.
+Unless interrupts are disabled in the processor (which can also happen), the processor immediately stops what it is doing, disables the interrupt system, and jumps to a predefined location in memory and executes the code located there.
+This predefined point is set up by the kernel and is the *entry point* for interrupt handlers.
+
+#### /proc/interrupts
+
+Procfs is a virtual filesystem that exists only in kernel memory and is typically mounted at `/proc`.
+Reading or writing files in procfs invokes kernel functions that simulate reading or writing from a real file.
+A relevant example is the `/proc/interrupts` file, which is populated with statistics related to interrupts on the system.
+
+For the curious, procfs code is located primarily in `fs/proc`.
+The function that provides `/proc/interrupts` is, not surprisingly, architecture-dependent and named `show_interrupts()`.
+
+### Interrupt Control
+
+The Linux kernel implements a family of interfaces for manipulating the state of interrupts on a machine.
+These interfaces enable you to disable the interrupt system for the current processor or mask out an interrupt line for the entire machine.
+These routines are all architecture-dependent and can be found in `<asm/system.h>` and `<asm/irq.h>`.
+
+Reasons to control the interrupt system generally boil down to needing to provide synchronization.
+By disabling interrupts, you can guarantee that an interrupt handler will not preempt your current code.
+Moreover, disabling interrupts also disables kernel preemption.
+Neither disabling interrupt delivery nor disabling kernel preemption provides any protection from concurrent access from another processor, however.
+Because Linux supports multiple processors, kernel code more generally needs to obtain some sort of lock to prevent another processor from accessing shared data simultaneously.
+These locks are often obtained in conjunction with disabling local interrupts.
+The lock provides protection against concurrent access from another processor, whereas disabling interrupts provides protection against concurrent access from a possible interrupt handler.
+Nevertheless, understanding the kernel interrupt control interfaces is important.
