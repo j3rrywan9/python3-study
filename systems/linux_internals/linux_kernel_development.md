@@ -546,7 +546,6 @@ This function is invoked whenever the operating system receives the interrupt.
 ```c
 typedef irqreturn_t (*irq_handler_t)(int, void *);
 ```
-
 Note the specific prototype of the handler function: It takes two parameters and has a return value of `irqreturn_t`.
 
 #### Interrupt Handler Flags
@@ -612,8 +611,7 @@ The `current` macro is not relevant (although it points to the interrupted proce
 Without a backing process, interrupt context cannot sleep - how would it ever reschedule?
 Therefore, you cannot call certain functions from interrupt context.
 If a function sleeps, you cannot use it from your interrupt handler - this limits the functions that one can call from an interrupt handler.
-I
-nterrupt context is time-critical because the interrupt handler interrupts other code.
+Interrupt context is time-critical because the interrupt handler interrupts other code.
 Code should be quick and simple.
 Busy looping is possible, but discouraged.
 This is an important point;
@@ -655,3 +653,364 @@ Because Linux supports multiple processors, kernel code more generally needs to 
 These locks are often obtained in conjunction with disabling local interrupts.
 The lock provides protection against concurrent access from another processor, whereas disabling interrupts provides protection against concurrent access from a possible interrupt handler.
 Nevertheless, understanding the kernel interrupt control interfaces is important.
+
+## Bottom Halves and Deferring Work
+
+Consequently, managing interrupts is divided into two parts, or *halves*.
+The first part, interrupt handlers (*top halves*), are executed by the kernel asynchronously in immediate response to a hardware interrupt, as discussed in the previous chapter.
+This chapter looks at the second part of the interrupt solution, *bottom halves*.
+
+### Bottom Halves
+
+The job of bottom halves is to perform any interrupt-related work not performed by the interrupt handler.
+In an ideal world, this is nearly all the work because you want the interrupt handler to perform as little work (and in turn be as fast) as possible.
+By offloading as much work as possible to the bottom half, the interrupt handler can return control of the system to whatever it interrupted as quickly as possible.
+
+Nonetheless, the interrupt handler must perform some of the work.
+For example, the interrupt handler almost assuredly needs to acknowledge to the hardware the receipt of the interrupt.
+It may need to copy data to or from the hardware.
+This work is timing-sensitive, so it makes sense to perform it in the interrupt handler.
+
+Almost anything else is fair game for performing in the bottom half.
+For example, if you copy data from the hardware into memory in the top half, it certainly makes sense to process it in the bottom half.
+Unfortunately, no hard and fast rules exist about what work to perform where - the decision is left entirely up to the device-driver author.
+Although no arrangement is *illegal*, an arrangement can certainly be *suboptimal*.
+Remember, interrupt handlers run asynchronously, with at least the current interrupt line disabled.
+Minimizing their duration is important.
+Although it is not always clear how to divide the work between the top and bottom half, a couple of useful tips help:
+* If the work is time sensitive, perform it in the interrupt handler.
+* If the work is related to the hardware, perform it in the interrupt handler.
+* If the work needs to ensure that another interrupt (particularly the same interrupt) does not interrupt it, perform it in the interrupt handler.
+* For everything else, consider performing the work in the bottom half.
+
+When attempting to write your own device driver, looking at other interrupt handlers and their corresponding bottom halves can help.
+When deciding how to divide your interrupt processing work between the top and bottom half, ask yourself what *must* be in the top half and what *can* be in the bottom half.
+Generally, the quicker the interrupt handler executes, the better.
+
+## An Introduction to Kernel Synchronization
+
+In a shared memory application, developers must ensure that shared resources are protected from concurrent access.
+The kernel is no exception.
+Shared resources require protection from concurrent access because if multiple threads of execution1 access and manipulate the data at the same time, the threads may overwrite each other's changes or access data while it is in an inconsistent state.
+Concurrent access of shared data is a recipe for instability that often proves hard to track down and debug - getting it right at the start is important.
+
+## Kernel Synchronization Methods
+
+## Timers and Time Management
+
+## Memory Management
+
+Memory allocation inside the kernel is not as easy as memory allocation outside the kernel.
+Simply put, the kernel lacks luxuries enjoyed by user-space.
+Unlike user-space, the kernel is not always afforded the capability to easily allocate memory.
+For example, the kernel cannot easily deal with memory allocation errors, and the kernel often cannot sleep.
+Because of these limitations, and the need for a lightweight memory allocation scheme, getting hold of memory in the kernel is more complicated than in user-space.
+This is not to say that, from a programmer's point of view, kernel memory allocations are difficult - just different.
+
+This chapter discusses the methods used to obtain memory inside the kernel.
+Before you can delve into the actual allocation interfaces, however, you need to understand how the kernel handles memory.
+
+### Pages
+
+The kernel treats physical pages as the basic unit of memory management.
+Although the processor's smallest addressable unit is a byte or a word, the memory management unit (MMU, the hardware that manages memory and performs virtual to physical address translations) typically deals in pages.
+Therefore, the MMU maintains the system's page tables with page-sized granularity (hence their name).
+In terms of virtual memory, pages are the smallest unit that matters.
+
+Many architectures even support multiple page sizes.
+Most 32-bit architectures have 4KB pages, whereas most 64-bit architectures have 8KB pages.
+This implies that on a machine with 4KB pages and 1GB of memory, physical memory is divided into 262,144 distinct pages.
+
+The kernel represents every physical page on the system with a struct `page` structure.
+This structure is defined in `<linux/mm_types.h>`.
+
+The important point to understand is that the page structure is associated with physical pages, not virtual pages.
+Therefore, what the structure describes is transient at best.
+Even if the data contained in the page continues to exist, it might not always be associated with the same page structure because of swapping and so on.
+The kernel uses this data structure to describe the associated physical page.
+The data structure's goal is to describe physical memory, not the data contained therein.
+
+The kernel uses this structure to keep track of all the pages in the system, because the kernel needs to know whether a page is free (that is, if the page is not allocated).
+If a page is not free, the kernel needs to know who owns the page.
+Possible owners include user-space processes, dynamically allocated kernel data, static kernel code, the page cache, and so on.
+
+### Zones
+
+Because of hardware limitations, the kernel cannot treat all pages as identical.
+Some pages, because of their physical address in memory, cannot be used for certain tasks.
+Because of this limitation, the kernel divides pages into different *zones*.
+The kernel uses the zones to group pages of similar properties.
+In particular, Linux has to deal with two shortcomings of hardware with respect to memory addressing:
+* Some hardware devices can perform DMA (direct memory access) to only certain memory addresses.
+* Some architectures can physically addressing larger amounts of memory than they can virtually address.
+Consequently, some memory is not permanently mapped into the kernel address space.
+
+Because of these constraints, Linux has four primary memory zones:
+* ZONE_DMA - This zone contains pages that can undergo DMA.
+* ZONE_DMA32 - Like ZOME_DMA, this zone contains pages that can undergo DMA.
+Unlike ZONE_DMA, these pages are accessible only by 32-bit devices.
+On some architectures, this zone is a larger subset of memory.
+* ZONE_NORMAL - This zone contains normal, regularly mapped, pages.
+* ZONE_HIGHMEM - This zone contains "high memory," which are pages not permanently mapped into the kernel's address space.
+
+These zones, and two other, less notable ones, are defined in `<linux/mmzone.h>`.
+
+The actual use and layout of the memory zones is architecture-dependent.
+For example, some architectures have no problem performing DMA into any memory address.
+In those architectures, `ZONE_DMA` is empty and `ZONE_NORMAL` is used for allocations regardless of their use.
+As a counterexample, on the x86 architecture, ISA devices cannot perform DMA into the full 32-bit address space because ISA devices can access only the first 16MB of physical memory.
+Consequently, `ZONE_DMA` on x86 consists of all memory in the range 0MB–16MB.
+
+`ZONE_HIGHMEM` works in the same regard.
+What an architecture can and cannot directly map varies.
+On 32-bit x86 systems, `ZONE_HIGHMEM` is all memory above the physical 896MB mark.
+On other architectures, `ZONE_HIGHMEM` is empty because all memory is directly mapped.
+The memory contained in `ZONE_HIGHMEM` is called *high memory*.
+The rest of the system's memory is called *low memory*.
+
+`ZONE_NORMAL` tends to be whatever is left over after the previous two zones claim their requisite shares.
+On x86, for example, `ZONE_NORMAL` is all physical memory from 16MB to 896MB.
+On other (more fortunate) architectures, `ZONE_NORMAL` is all available memory.
+
+Linux partitions the system's pages into zones to have a pooling in place to satisfy allocations as needed.
+For example, having a `ZONE_DMA` pool gives the kernel the capability to satisfy memory allocations needed for DMA.
+If such memory is needed, the kernel can simply pull the required number of pages from `ZONE_DMA`.
+Note that the zones do not have any physical relevance but are simply logical groupings used by the kernel to keep track of pages.
+
+Although some allocations may require pages from a particular zone, other allocations may pull from multiple zones.
+For example, although an allocation for DMA-able memory must originate from `ZONE_DMA`, a normal allocation can come from `ZONE_DMA` or `ZONE_NORMAL` but not both;
+allocations cannot cross zone boundaries.
+The kernel prefers to satisfy normal allocations from the normal zone, of course, to save the pages in `ZONE_DMA` for allocations that need it.
+But if push comes to shove (say, if memory should get low), the kernel can dip its fingers in whatever zone is available and suitable.
+
+Not all architectures define all zones.
+For example, a 64-bit architecture such as Intel's x86-64 can fully map and handle 64-bits of memory.
+Thus, x86-64 has no `ZONE_HIGHMEM` and all physical memory is contained within `ZONE_DMA` and `ZONE_NORMAL`.
+
+Each zone is represented by `struct zone`, which is defined in `<linux/mmzone.h>`:
+
+### Getting Pages
+
+Now with an understanding of how the kernel manages memory - via pages, zones, and so on - let's look at the interfaces the kernel implements to enable you to allocate and free memory within the kernel.
+
+#### Getting Zeroed Pages
+
+#### Freeing Pages
+
+These low-level page functions are useful when you need page-sized chunks of physically contiguous pages, especially if you need exactly a single page or two.
+For more general byte-sized allocations, the kernel provides `kmalloc()`.
+
+#### `kmalloc()`
+
+The `kmalloc()` function’s operation is similar to that of user-space's familiar `malloc()` routine, with the exception of the additional `flags` parameter.
+The `kmalloc()` function is a simple interface for obtaining kernel memory in byte-sized chunks.
+If you need whole pages, the previously discussed interfaces might be a better choice.
+For most kernel allocations, however, `kmalloc()` is the preferred interface.
+
+The function is declared in `<linux/slab.h>`:
+```c
+void *kmalloc(size_t size, gfp_t flags)
+```
+The function returns a pointer to a region of memory that is at least size bytes in length.
+The region of memory allocated is physically contiguous.
+On error, it returns `NULL`. Kernel allocations always succeed, unless an insufficient amount of memory is available.
+Thus, you must check for `NULL` after all calls to `kmalloc()` and handle the error appropriately.
+
+#### `gfp_mask` Flags
+
+You've seen various examples of allocator flags in both the low-level page allocation functions and kmalloc().
+Now it's time to discuss these flags in depth.
+Flags are represented by the `gfp_t` type, which is defined in `<linux/types.h>` as an `unsigned int`.
+*gfp* stands for `__get_free_pages()`, one of the memory allocation routines we discussed earlier.
+
+#### `kfree()`
+
+#### `vmalloc()`
+
+The `vmalloc()` function works in a similar fashion to `kmalloc()`, except it allocates memory that is only virtually contiguous and not necessarily physically contiguous.
+This is how a user-space allocation function works: The pages returned by `malloc()` are contiguous within the virtual address space of the processor, but there is no guarantee that they are actually contiguous in physical RAM.
+The `kmalloc()` function guarantees that the pages are physically contiguous (and virtually contiguous).
+The `vmalloc()` function ensures only that the pages are contiguous within the virtual address space.
+It does this by allocating potentially noncontiguous chunks of physical memory and "fixing up" the page tables to map the memory into a contiguous chunk of the logical address space.
+
+### Slab Layer
+
+Allocating and freeing data structures is one of the most common operations inside any kernel.
+To facilitate frequent allocations and deallocations of data, programmers often introduce *free lists*.
+A free list contains a block of available, already allocated, data structures.
+When code requires a new instance of a data structure, it can grab one of the structures off the free list rather than allocate the sufficient amount of memory and set it up for the data structure.
+Later, when the data structure is no longer needed, it is returned to the free list instead of deallocated.
+In this sense, the free list acts as an object cache, caching a frequently used *type* of object.
+
+One of the main problems with free lists in the kernel is that there exists no global control.
+When available memory is low, there is no way for the kernel to communicate to every free list that it should shrink the sizes of its cache to free up memory.
+The kernel has no understanding of the random free lists at all.
+To remedy this, and to consolidate code, the Linux kernel provides the slab layer (also called the slab allocator).
+The slab layer acts as a generic data structure - caching layer.
+
+The concept of a slab allocator was first implemented in Sun Microsystem's SunOS 5.4 operating system.
+The Linux data structure caching layer shares the same name and basic design.
+
+## The Virtual Filesystem
+
+### Common Filesystem Interface
+
+The VFS is the glue that enables system calls such as `open()`, `read()`, and `write()` to work regardless of the filesystem or underlying physical medium.
+These days, that might not sound novel - we have long been taking such a feature for granted - but it is a nontrivial feat for such generic system calls to work across many diverse filesystems and varying media.
+More so, the system calls work *between* these different filesystems and media - we can use standard system calls to copy or move files from one filesystem to another.
+In older operating systems, such as DOS, this would never have worked;
+any access to a non-native filesystem required special tools.
+It is only because modern operating systems, such as Linux, abstract access to the filesystems via a virtual interface that such interoperation and generic access is possible.
+
+New filesystems and new varieties of storage media can find their way into Linux, and programs need not be rewritten or even recompiled.
+In this chapter, we will discuss the VFS, which provides the abstraction allowing myriad filesystems to behave as one.
+In the next chapter, we will discuss the block I/O layer, which allows various storage devices - CD to Blu-ray discs to hard drives to CompactFlash.
+Together, the VFS and the block I/O layer provide the abstractions, interfaces, and glue that allow user-space programs to issue generic system calls to access files via a uniform naming policy on any filesystem, which itself exists on any storage medium.
+
+### Filesystem Abstraction Layer
+
+Such a generic interface for any type of filesystem is feasible only because the kernel implements an abstraction layer around its low-level filesystem interface.
+This abstraction layer enables Linux to support different filesystems, even if they differ in supported features or behavior.
+This is possible because the VFS provides a common file model that can represent any filesystem's general feature set and behavior.
+Of course, it is biased toward Unix-style filesystems.
+(You see what constitutes a Unix-style filesystem later in this chapter.)
+Regardless, wildly differing filesystem types are still supportable in Linux, from DOS's FAT to Windows's NTFS to many Unix-style and Linux-specific filesystems.
+
+### Unix Filesystems
+
+Historically, Unix has provided four basic filesystem-related abstractions: files, directory entries, inodes, and mount points.
+
+A *filesystem* is a hierarchical storage of data adhering to a specific structure.
+Filesystems contain files, directories, and associated control information.
+Typical operations performed on filesystems are creation, deletion, and mounting.
+In Unix, filesystems are mounted at a specific mount point in a global hierarchy known as a *namespace*.
+This enables all mounted filesystems to appear as entries in a single tree.
+Contrast this single, unified tree with the behavior of DOS and Windows, which break the file namespace up into drive letters, such as `C:`.
+This breaks the namespace up among device and partition boundaries, "leaking" hardware details into the filesystem abstraction.
+As this delineation may be arbitrary and even confusing to the user, it is inferior to Linux's unified namespace.
+
+A *file* is an ordered string of bytes.
+The first byte marks the beginning of the file, and the last byte marks the end of the file.
+Each file is assigned a human-readable name for identification by both the system and the user.
+Typical file operations are read, write, create, and delete.
+
+Files are organized in directories.
+A *directory* is analogous to a folder and usually contains related files.
+Directories can also contain other directories, called subdirectories.
+In this fashion, directories may be nested to form paths.
+Each component of a path is called a *directory entry*.
+In Unix, directories are actually normal files that simply list the files contained therein.
+Because a directory is a file to the VFS, the same operations performed on files can be performed on directories.
+
+Unix systems separate the concept of a file from any associated information about it, such as access permissions, size, owner, creation time, and so on.
+This information is sometimes called *file metadata* (that is, data about the file's data) and is stored in a separate data structure from the file, called the *inode*.
+This name is short for *index node*, although these days the term inode is much more ubiquitous.
+
+### VFS Objects and Their Data Structures
+
+The VFS is object-oriented.
+A family of data structures represents the common file model.
+These data structures are akin to objects.
+Because the kernel is programmed strictly in C, without the benefit of a language directly supporting object-oriented paradigms, the data structures are represented as C structures.
+The structures contain both data and pointers to filesystem-implemented functions that operate on the data.
+
+The four primary object types of the VFS are
+* The *superblock* object, which represents a specific mounted filesystem.
+* The *inode* object, which represents a specific file.
+* The *dentry* object, which represents a directory entry, which is a single component of a path.
+* The *file* object, which represents an open file as associated with a process.
+
+Note that because the VFS treats directories as normal files, there is not a specific directory object.
+Recall from earlier in this chapter that a dentry represents a component in a path, which might include a regular file.
+In other words, a dentry is not the same as a directory, but a directory is just another kind of file.
+
+An *operations* object is contained within each of these primary objects.
+These objects describe the methods that the kernel invokes against the primary objects:
+* The `super_operations` object, which contains the methods that the kernel can invoke on a specific filesystem, such as write_inode() and sync_fs()
+* The `inode_operations` object, which contains the methods that the kernel can invoke on a specific file, such as create() and link()
+* The `dentry_operations` object, which contains the methods that the kernel can invoke on a specific directory entry, such as d_compare() and d_delete()
+* The `file_operations` object, which contains the methods that a process can invoke on an open file, such as read() and write()
+
+The operations objects are implemented as a structure of pointers to functions that operate on the parent object.
+For many methods, the objects can inherit a generic function if basic functionality is sufficient.
+Otherwise, the specific instance of the particular filesystem fills in the pointers with its own filesystem-specific methods.
+
+Again, note that objects refer to structures—not explicit class types, such as those in C++ or Java.
+These structures, however, represent specific instances of an object, their associated data, and methods to operate on themselves.
+They are very much objects.
+
+The VFS loves structures, and it is comprised of a couple more than the primary objects previously discussed.
+Each registered filesystem is represented by a `file_system_type` structure.
+This object describes the filesystem and its capabilities.
+Furthermore, each mount point is represented by the `vfsmount` structure.
+This structure contains information about the mount point, such as its location and mount flags.
+
+Finally, two per-process structures describe the filesystem and files associated with a process.
+They are, respectively, the `fs_struct` structure and the `file` structure.
+
+### The superblock Object
+
+The superblock object is implemented by each filesystem and is used to store information describing that specific filesystem.
+This object usually corresponds to the *filesystem superblock* or the *filesystem control block*, which is stored in a special sector on disk (hence the object's name).
+Filesystems that are not disk-based (a virtual memory–based filesystem, such as *sysfs*, for example) generate the superblock on-the-fly and store it in memory.
+
+### superblock Operations
+
+The most important item in the superblock object is `s_op`, which is a pointer to the superblock operations table.
+The superblock operations table is represented by `struct super_operations` and is defined in `<linux/fs.h>`.
+
+### The inode Object
+
+The inode object represents all the information needed by the kernel to manipulate a file or directory.
+For Unix-style filesystems, this information is simply read from the on-disk inode.
+If a filesystem does not have inodes, however, the filesystem must obtain the information from wherever it is stored on the disk.
+Filesystems without inodes generally store file-specific information as part of the file;
+unlike Unix-style filesystems, they do not separate file data from its control information.
+Some modern filesystems do neither and store file metadata as part of an on-disk database.
+Whatever the case, the inode object is constructed in memory in whatever manner is applicable to the filesystem.
+
+### inode Operations
+
+As with the superblock operations, the `inode_operations` member is important.
+It describes the filesystem's implemented functions that the VFS can invoke on an inode.
+
+### The dentry Object
+
+#### dentry State
+
+A valid dentry object can be in one of three states: used, unused, or negative.
+
+#### dentry Cache
+
+### dentry Operations
+
+The `dentry_operations` structure specifies the methods that the VFS invokes on directory entries on a given filesystem.
+
+### The file Object
+
+### file Operations
+
+As with all the other VFS objects, the file operations table is quite important.
+The operations associated with `struct file` are the familiar system calls that form the basis of the standard Unix system calls.
+
+### Data Structures Associated with Filesystems
+
+In addition to the fundamental VFS objects, the kernel uses other standard data structures to manage data related to filesystems.
+The first object is used to describe a specific variant of a filesystem, such as ext3, ext4, or UDF.
+The second data structure describes a mounted instance of a filesystem.
+
+### Data Structures Associated with a Process
+
+Each process on the system has its own list of open files, root filesystem, current working directory, mount points, and so on.
+Three data structures tie together the VFS layer and the processes on the system: `files_struct`, `fs_struct`, and `namespace`.
+
+The `files_struct` is defined in `<linux/fdtable.h>`.
+This table's address is pointed to by the files entry in the processor descriptor.
+All per-process information about open files and file descriptors is contained therein.
+
+The second process-related structure is `fs_struct`, which contains filesystem information related to a process and is pointed at by the `fs` field in the process descriptor.
+The structure is defined in `<linux/fs_struct.h>`.
+
+The third and final structure is the `namespace` structure, which is defined in `<linux/mnt_namespace.h>` and pointed at by the mnt_namespace field in the process descriptor.
+Per-process namespaces were added to the 2.4 Linux kernel.
+They enable each process to have a unique view of the mounted filesystems on the system - not just a unique root directory, but an entirely unique filesystem hierarchy.
