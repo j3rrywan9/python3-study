@@ -687,6 +687,54 @@ When attempting to write your own device driver, looking at other interrupt hand
 When deciding how to divide your interrupt processing work between the top and bottom half, ask yourself what *must* be in the top half and what *can* be in the bottom half.
 Generally, the quicker the interrupt handler executes, the better.
 
+#### Why Bottom Halves?
+
+It is crucial to understand why to defer work, and when exactly to defer it.
+You want to limit the amount of work you perform in an interrupt handler because interrupt handlers run with the current interrupt line disabled on all processors.
+
+#### A World of Bottom Halves
+
+##### The Original "Bottom Half"
+
+##### Task Queues
+
+##### Softirqs and Tasklets
+
+### Softirqs
+
+#### Implementing Softirqs
+
+Softirqs are statically allocated at compile time.
+Unlike tasklets, you cannot dynamically register and destroy softirqs.
+Softirqs are represented by the `softirq_action` structure, which is defined in `<linux/interrupt.h>`:
+
+#### The Softirq Handler
+
+#### Executing Softirqs
+
+A registered softirq must be marked before it will execute.
+This is called *raising the softirq*.
+Usually, an interrupt handler marks its softirq for execution before returning.
+Then, at a suitable time, the softirq runs.
+Pending softirqs are checked for and executed in the following places:
+* In the return from hardware interrupt code path
+* In the `ksoftirqd` kernel thread
+* In any code that explicitly checks for and executes pending softirqs, such as the networking subsystem
+
+Regardless of the method of invocation, softirq execution occurs in `__do_softirq()`, which is invoked by `do_softirq()`.
+The function is quite simple.
+If there are pending softirqs, `__do_softirq()` loops over each one, invoking its handler.
+
+#### Using Softirqs
+
+##### Assigning an Index
+
+### Tasklets
+
+Softirqs are useful when performance is critical, such as with networking.
+Using softirqs requires more care, however, because two of the same softirq can run at the same time.
+In addition, softirqs must be registered statically at compile time. Conversely, code can dynamically register tasklets.
+
 ## An Introduction to Kernel Synchronization
 
 In a shared memory application, developers must ensure that shared resources are protected from concurrent access.
@@ -1014,3 +1062,102 @@ The structure is defined in `<linux/fs_struct.h>`.
 The third and final structure is the `namespace` structure, which is defined in `<linux/mnt_namespace.h>` and pointed at by the mnt_namespace field in the process descriptor.
 Per-process namespaces were added to the 2.4 Linux kernel.
 They enable each process to have a unique view of the mounted filesystems on the system - not just a unique root directory, but an entirely unique filesystem hierarchy.
+
+## The Block I/O Layer
+
+## The Process Address Space
+
+In addition to managing its own memory, the kernel also has to manage the memory of user-space processes.
+This memory is called the *process address space*, which is the representation of memory given to each user-space process on the system.
+Linux is a virtual memory operating system, and thus the resource of memory is virtualized among the processes on the system.
+An individual process's view of memory is as if it alone has full access to the system's physical memory.
+More important, the address space of even a single process can be much larger than physical memory.
+This chapter discusses how the kernel manages the process address space.
+
+### Address Spaces
+
+The process address space consists of the virtual memory addressable by a process and the addresses within the virtual memory that the process is allowed to use.
+Each process is given a *flat* 32- or 64-bit address space, with the size depending on the architecture.
+The term *flat* denotes that the address space exists in a single range.
+Modern virtual memory operating systems generally have a flat memory model and not a segmented one.
+Normally, this flat address space is unique to each process.
+A memory address in one process's address space is completely unrelated to that same memory address in another process's address space.
+Both processes can have different data at the same address in their respective address spaces.
+Alternatively, processes can elect to share their address space with other processes.
+We know these processes as *threads*.
+
+The process can access a memory address only in a valid memory area.
+Memory areas have associated permissions, such as readable, writable, and executable, that the associated process must respect.
+If a process accesses a memory address not in a valid memory area, or if it accesses a valid area in an invalid manner, the kernel kills the process with the dreaded "Segmentation Fault" message.
+
+### The Memory Descriptor
+
+The kernel represents a process's address space with a data structure called the *memory descriptor*.
+This structure contains all the information related to the process address space.
+The memory descriptor is represented by `struct mm_struct` and defined in `<linux/mm_types.h>`.
+
+#### Allocating a Memory Descriptor
+
+The memory descriptor associated with a given task is stored in the mm field of the task's process descriptor.
+(The process descriptor is represented by the task_struct structure, defined in `<linux/sched.h>`.)
+Thus, `current->mm` is the current process's memory descriptor.
+The `copy_mm()` function copies a parent's memory descriptor to its child during `fork()`.
+The `mm_struct` structure is allocated from the `mm_cachep` slab cache via the `allocate_mm()` macro in `kernel/fork.c`.
+Normally, each process receives a unique `mm_struct` and thus a unique process address space.
+
+Processes may elect to share their address spaces with their children by means of the `CLONE_VM` flag to `clone()`.
+The process is then called a *thread*.
+Recall from Chapter 3, "Process Management," that this is essentially the only difference between normal processes and so-called threads in Linux;
+the Linux kernel does not otherwise differentiate between them.
+Threads are regular processes to the kernel that merely share certain resources.
+
+In the case that `CLONE_VM` is specified, `allocate_mm()` is not called, and the process's `mm` field is set to point to the memory descriptor of its parent via this logic in `copy_mm()`:
+
+#### Destroying a Memory Descriptor
+
+#### The `mm_struct` and Kernel Threads
+
+Kernel threads do not have a process address space and therefore do not have an associated memory descriptor.
+Thus, the `mm` field of a kernel thread's process descriptor is `NULL`.
+This is the *definition* of a kernel thread -  processes that have no user context.
+
+This lack of an address space is fine because kernel threads do not ever access any user-space memory.
+
+### Virtual Memory Areas
+
+The memory area structure, `vm_area_struct`, represents memory areas.
+It is defined in `<linux/mm_types.h>`.
+In the Linux kernel, memory areas are often called *virtual memory areas* (abbreviated VMAs).
+
+The `vm_area_struct` structure describes a single memory area over a contiguous interval in a given address space.
+The kernel treats each memory area as a unique memory object.
+Each memory area possesses certain properties, such as permissions and a set of associated operations.
+In this manner, each VMA structure can represent different types of memory areas - for example, memory-mapped files or the process's user-space stack.
+
+#### VMA Flags
+
+The `vm_flags` field contains bit flags, defined in `<linux/mm.h>`, that specify the behavior of and provide information about the pages contained in the memory area.
+Unlike permissions associated with a specific physical page, the VMA flags specify behavior for which the kernel is responsible, not the hardware.
+Furthermore, `vm_flags` contains information that relates to each page in the memory area, or the memory area as a whole, and not specific individual pages.
+
+#### VMA Operations
+
+#### Lists and Trees of Memory Areas
+
+### Manipulating Memory Areas
+
+### Page Tables
+
+Although applications operate on virtual memory mapped to physical addresses, processors operate directly on those physical addresses.
+Consequently, when an application accesses a virtual memory address, it must first be converted to a physical address before the processor can resolve the request.
+Performing this lookup is done via page tables.
+Page tables work by splitting the virtual address into chunks.
+Each chunk is used as an index into a table.
+The table points to either another table or the associated physical page.
+
+In Linux, the page tables consist of three levels.
+The multiple levels enable a sparsely populated address space, even on 64-bit machines.
+If the page tables were implemented as a single static array, their size on even 32-bit architectures would be enormous.
+Linux uses three levels of page tables even on architectures that do not support three levels in hardware.
+(For example, some hardware uses only two levels or implements a hash in hardware.)
+Using three levels is a sort of "greatest common denominator" — architectures with a less complicated implementation can simplify the kernel page tables as needed with compiler optimizations.
