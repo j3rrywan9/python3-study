@@ -77,6 +77,19 @@ You can't change a string in place, but you can copy parts of strings to another
 
 *f-strings* appeared in Python 3.6, and are now the recommended way of formatting strings.
 
+To make an f-string:
+* Type the letter f or F directly before the initial quote.
+* Include variable names or expressions within curly brackets (`{}`) to get their values into the string.
+
+It's like the previous section's "new-style" formatting,but without the `format()` function, and without empty brackets (`{}`) or positional ones (`{1}`)in the format string.
+
+As I already mentioned, expressions are also allowed inside the curly brackets:
+```python
+f'The {thing.capitalize()} is in the {place.rjust(20)}'
+```
+This means that the things that you could do inside `format()` in the previous section, you can now do inside a `{}` in your main string.
+This seems easier to read.
+
 ## Loop with `while` and `for`
 
 ## Tuples and Lists
@@ -416,3 +429,74 @@ You define a string *pattern* that you want to match, and the *source* string to
 #### Find First Match with `search()`
 
 #### Find All Matches with `findall()`
+
+## Calendars and Clocks
+
+## Files and Directories
+
+### File Input and Output
+
+#### Create or Open with `open()`
+
+You need to call the `open` function before you do the following:
+* Read an existing file
+* Write to a new file
+* Append to an existing file
+* Overwrite an existing file
+
+```python
+fileobj = open(filename, mode)
+```
+
+#### Write a Text File with `print()`
+
+#### Write a Text File with `write()`
+
+#### Read a Text File with `read()`, `readline()`, or `readlines()`
+
+You can provide a maximum character count to limit how much `read()` returns at one time.
+
+You can also read the file a line at a time by using `readline()`.
+
+The easiest way to read a text file is by using an iterator.
+This returns one line at a time.
+
+#### Write a Binary File with `write()`
+
+#### Read a Binary File with `read()`
+
+This one is simple;
+all you need to do is just open with 'rb':
+
+#### Close Files Automatically by Using `with`
+
+If you forget to close a file that you've opened, it will be closed by Python after it's no longer referenced.
+This means that if you open a file within a function and don't close it explicitly, it will be closed automatically when the function ends.
+But you might have opened the file in a long-running function or the main section of the program.
+The file should be closed to force any remaining writes to be completed.
+
+#### Change Position with `seek()`
+
+### Memory Mapping
+
+### File Operations
+
+#### Check Existence with `exists()`
+
+#### Check Type with `isfile()`
+
+### Directory Operations
+
+### Pathnames
+
+### `BytesIO` and `StringIO`
+
+## Data in Time: Processes and Concurrency
+
+### Programs and Processes
+
+#### Create a Process with `subprocess`
+
+### Command Automation
+
+### Concurrency
