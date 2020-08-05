@@ -204,8 +204,123 @@ As a result, data read previously from disk and no longer used by any process co
 
 ## Chapter 2 Memory Addressing
 
+### Memory Addresses
+
+The Memory Management Unit (MMU) transforms a logical address into a linear address by means of a hardware circuit called a segmentation unit;
+subsequently, a second hardware circuit called a paging unit transforms the linear address into a physical address
+
+### Segmentation in Hardware
+
+#### Segment Selectors and Segmentation Registers
+
+A logical address consists of two parts: a segment identifier and an offset that specifies the relative address within the segment.
+The segment identifier is a 16-bit field called the *Segment Selector*, while the offset is a 32-bit field.
+
+To make it easy to retrieve segment selectors quickly, the processor provides segmentation registers whose only purpose is to hold Segment Selectors;
+these registers are called **cs**, **ss**, **ds**, **es**, **fs**, and **gs**.
+Although there are only six of them, a program can reuse the same segmentation register for different purposes by saving its content in memory and then restoring it later.
+
+The remaining three segmentation registers are general purpose  and may refer to arbitrary data segments.
+
+The cs register has another important function: it includes a 2-bit field that specifies the Current Privilege Level (CPL) of the CPU.
+The value 0 denotes the highest privilege level, while the value 3 denotes the lowest one.
+Linux uses only levels 0 and 3, which are respectively called Kernel Mode and User Mode.
+
+#### Segment Descriptors
+
+Each segment is represented by an 8-byte *Segment Descriptor* that describes the segment characteristics.
+Segment Descriptors are stored either in the Global Descriptor Table (GDT) or in the Local Descriptor Table (LDT).
+
+### Segmentation in Linux
+
+### Paging in Hardware
+
+The paging unit translates linear addresses into physical ones.
+One key task in the unit is to check the requested access type against the access rights of the linear address.
+If the memory access is not valid, it generates a Page Fault exception
+
 ## Chapter 10 System Calls
 
 ## Chapter 11 Signals
 
+Signals were introduced by the first Unix systems to allow interactions between User Mode processes;
+the kernel also uses them to notify processes of system events.
+
+### The Role of Signals
+
+A *signal* is a very short message that may be sent to a process or a group of processes.
+The only information given to the process is usually a number identifying the signal;
+there is no room in standard signals for arguments, a message, or other accompanying information.
+
+A set of macros whose names start with the prefix `SIG` is used to identify signals;
+we have already made a few references to them in previous chapters.
+
+Signals serve two main purposes:
+* To make a process aware that a specific event has occurred
+* To cause a process to execute a *signal handler* function included in its code
+
+Of course, the two purposes are not mutually exclusive, because often a process must react to some event by executing a specific routine.
+
+| # | Signal Name | Default action | Comment | POSIX |
+| --- | --- | --- | --- | --- |
+| 1 | SIGHUP | Terminate | Hang up controlling terminal or process | Yes |
+| 2 | SIGINT | Terminate | Interrupt from keyboard | Yes |
+
+#### Actions Performed upon Delivering a Signal
+
+There are three ways in which a process can respond to a signal:
+1. Explicitly ignore the signal.
+1. Execute the default action associated with the signal.
+This action, which is predefined by the kernel, depends on the signal type and may be any one of the following:
+Terminate
+Dump
+Ignore
+Stop
+Continue
+1. Catch the signal by invoking a corresponding signal-handler function.
+
+Notice that blocking a signal is different from ignoring it.
+A signal is not delivered as long as it is blocked;
+it is delivered only after it has been unblocked.
+An ignored signal is always delivered, and there is no further action.
+
+The `SIGKILL` and `SIGSTOP` signals cannot be ignored, caught, or blocked, and their default actions must always be executed.
+Therefore, `SIGKILL` and `SIGSTOP` allow a user with appropriate privileges to terminate and to stop, respectively, every process, regardless of the defenses taken by the program it is executing.
+
+#### POSIX Signals and Multithreaded Applications
+
+#### Data Structures Associated with Signals
+
+For each process in the system, the kernel must keep track of what signals are currently pending or masked;
+the kernel must also keep track of how every thread group is supposed to handle every signal.
+To do this, the kernel uses several data structures accessible from the process descriptor.
+
+### Generating a Signal
+
+### Delivering a Signal
+
+### System Calls Related to Signal Handling
+
+#### The `kill()` System Call
+
 ## Chapter 12 The Virtual Filesystem
+
+### The Role of the VFS
+
+### VFS Data Structures
+
+## Chapter 19 Process Communication
+
+### Pipes
+
+Pipes are an interprocess communication mechanism that is provided in all flavors of Unix.
+A pipe is a one-way flow of data between processes: all data written by a process to the pipe is routed by the kernel to another process, which can thus read it.
+
+#### Using a Pipe
+
+Many Unix systems provide, besides the `pipe()` system call, two wrapper functions named `popen()` and `pclose()` that handle all the dirty work        usually done when using pipes.
+Once a pipe has been created by means of the `popen()` function, it can be used with the high-level I/O functions included in the C library (`fprintf()`, `fscanf()`, and so on).
+
+In Linux, `popen()` and `pclose()` are included in the C library.
+The `popen( )` function receives two parameters: the filename pathname of an executable file and a type string specifying the direction of the data transfer.
+It returns the pointer to a FILE data structure.
