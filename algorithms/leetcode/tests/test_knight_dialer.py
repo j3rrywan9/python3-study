@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..knight_dialer import Solution
+from ..dp.knight_dialer import Solution
 
 
 def test_example1():
