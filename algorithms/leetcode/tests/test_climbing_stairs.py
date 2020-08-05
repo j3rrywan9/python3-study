@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..climbing_stairs import Solution
+from algorithms.leetcode.dp.climbing_stairs import Solution
 
 
 def test_example1():
