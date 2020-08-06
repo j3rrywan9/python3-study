@@ -2,7 +2,7 @@
 
 
 class Solution:
-    def isPalindrome(self, s: str) -> bool:
+    def is_palindrome(self, s):
         i, j = 0, len(s) - 1
 
         while i < j:
@@ -18,8 +18,3 @@ class Solution:
             j -= 1
 
         return True
-
-
-if __name__ == '__main__':
-    print(Solution().isPalindrome("A man, a plan, a canal: Panama"))
-    print(Solution().isPalindrome("race a car"))
