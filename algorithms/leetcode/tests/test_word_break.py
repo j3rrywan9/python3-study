@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..word_break import Solution
+from algorithms.leetcode.dp.word_break import Solution
 
 
 def test_example1():
