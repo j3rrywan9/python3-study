@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..kth_smallest_element_in_a_sorted_matrix import Solution
+from algorithms.leetcode.heap.kth_smallest_element_in_a_sorted_matrix import Solution
 
 
 def test_example1():
