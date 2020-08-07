@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..meeting_rooms_ii import Solution
+from algorithms.leetcode.heap.meeting_rooms_ii import Solution
 
 
 def test_example1():
