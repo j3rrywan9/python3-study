@@ -13,6 +13,27 @@ If a container object's `__iter__()` method is implemented as a generator, it wi
 
 ### Sequence Types - list, tuple, range
 
+#### Lists
+
+```python
+class List([iterable])
+```
+Lists may be constructed in several ways:
+* Using a pair of square brackets to denote the empty list: `[]`
+* Using square brackets, separating items with commas: `[a]`, `[a, b, c]`
+* Using a list comprehension: `[x for x in iterable]`
+* Using the type constructor: `list()` or `list(iterable)`
+
+Many other operations also produce lists, including the `sorted()` built-in.
+
+Lists implement all of the common and mutable sequence operations.
+Lists also provide the following additional method:
+```python
+sort(*, key=None, reverse=False)
+```
+This method sorts the list in place, using only `<` comparisons between items.
+Exceptions are not suppressed - if any comparison operations fail, the entire sort operation will fail (and the list will likely be left in a partially modified state).
+
 ### Text Sequence Type - str
 
 Since there is no separate "character" type, indexing a string produces strings of length 1.
