@@ -3,9 +3,13 @@
 
 class Solution:
     def climb_stairs(self, n):
-        dp1, dp2 = 1, 1
+        if n <= 2:
+            return n
 
-        for i in range(2, n + 1):
-            dp2, dp1 = dp1 + dp2, dp2
+        first, second, third = 1, 2, 3
 
-        return dp2
+        for i in range(3, n+1):
+            third = first + second
+            first, second = second, third
+
+        return third
