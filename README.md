@@ -3,9 +3,9 @@
 ## Setup
 
 ```bash
-pyenv install 3.8.2
+pyenv install 3.8.5
 
-pyenv global 3.8.2
+pyenv global 3.8.5
 
 python -m venv venv
 
@@ -17,5 +17,5 @@ pip install -r requirements.txt
 ## Running Tests
 
 ```bash
-pytest
+pytest -v
 ```
