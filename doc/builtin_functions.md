@@ -94,3 +94,11 @@ Note, the locals dictionary is only useful for reads since updates to the locals
 ### `xrange(stop)`
 
 ### `xrange(start, stop[, step])`
+
+## 3.8
+
+### `ord(c)`
+
+Given a string representing one Unicode character, return an integer representing the Unicode code point of that character.
+For example, `ord('a')` returns the integer `97` and `ord('€')` (Euro sign) returns `8364`.
+This is the inverse of `chr()`.
