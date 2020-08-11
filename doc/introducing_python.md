@@ -1,4 +1,4 @@
-# Introducing Python
+# Introducing Python, 2nd Edition
 
 ## Data: Types, Values, Variables, and Names
 
@@ -99,6 +99,60 @@ This seems easier to read.
 #### Copy Everything with `deepcopy()`
 
 ## Dictionaries and Sets
+
+### Dictionaries
+
+A *dictionary* is similar to a list, but the order of items doesn't matter, and they aren't selected by an offset such as 0 or 1.
+Instead,you specify a unique key to associate with each value.
+This key is often a string, but it can actually be any of Python's immutable types: boolean, integer, float, tuple, string, and others that you'll see in later chapters.
+Dictionaries are mutable, so you can add, delete, and change their key-value elements.
+
+#### Convert with `dict()`
+
+#### Add or Change an Item by `[key]`
+
+#### Get an Item by `[key]` or with `get()`
+
+The second is to use the special dictionary `get()` function.
+You provide the dictionary, key, and an optional value.
+
+#### Get All Keys with `keys()`
+
+You can use `keys()` to get all of the keys in a dictionary.
+
+In Python 3, you also need to use the `list()` function to turn the results of `values()` and `items()` into normal Python lists.
+
+#### Get All Values with `values()`
+
+#### Get All Key-Value Pairs with `items()`
+
+#### Delete an Item by Key with `del()`
+
+#### Delete All Items with `clear()`
+
+#### Test for a Key with `in`
+
+#### Copy Everything with `deepcopy()`
+
+#### Iterate with `for` and `in`
+
+Iterating over a dictionary (or its `keys()` function) returns the keys.
+
+#### Dictionary Comprehensions
+
+### Sets
+
+#### Create with `set()`
+
+#### Add an Item with `add()`
+
+#### Delete an Item with `remove()`
+
+#### Iterate with `for` and `in`
+
+#### Test for a Value with `in`
+
+#### Combinations and Operators
 
 ## Functions
 
