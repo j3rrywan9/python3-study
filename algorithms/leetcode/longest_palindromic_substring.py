@@ -17,13 +17,8 @@ class Solution(object):
         return res
 
     def helper(self, s, left, right):
-        while 0 <= left and right < len(s) and s[left] == s[right]:
+        while left >= 0 and right < len(s) and s[left] == s[right]:
             left -= 1
             right += 1
 
         return s[left+1:right]
-
-
-if __name__ == '__main__':
-    print(Solution().longest_palindrome('babad'))
-    print(Solution().longest_palindrome('cbbd'))
