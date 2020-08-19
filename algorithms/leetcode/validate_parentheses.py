@@ -12,8 +12,8 @@ class Solution:
             if c == '[' or c == '(' or c == '{':
                 stack.append(c)
             elif c == ']' and len(stack) > 0 and stack[-1] == '[' or \
-                c == ')' and len(stack) > 0 and stack[-1] == '(' or \
-                c == '}' and len(stack) > 0 and stack[-1] == '{':
+                    c == ')' and len(stack) > 0 and stack[-1] == '(' or \
+                    c == '}' and len(stack) > 0 and stack[-1] == '{':
                 stack = stack[:-1]
             else:
                 return False
