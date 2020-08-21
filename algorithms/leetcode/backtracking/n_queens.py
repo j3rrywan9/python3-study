@@ -26,7 +26,7 @@ class Solution:
 
             output.append(solution)
 
-        def backtrack(row = 0):
+        def backtrack(row=0):
             for col in range(n):
                 if could_place(row, col):
                     place_queen(row, col)

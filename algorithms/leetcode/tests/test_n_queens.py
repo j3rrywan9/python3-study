@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from ..n_queens import Solution
+from ..backtracking.n_queens import Solution
 
 
 def test_example():
