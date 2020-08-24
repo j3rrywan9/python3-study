@@ -1,4 +1,4 @@
-from ..top_k_frequent_words import Solution
+from ..heap.top_k_frequent_words import Solution
 
 
 def test_example1():
