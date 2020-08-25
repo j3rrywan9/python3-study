@@ -2,7 +2,7 @@
 
 
 class Solution:
-    def inorderTraversal(self, root):
+    def inorder_traversal(self, root):
         result, stack = [], []
         current = root
 
