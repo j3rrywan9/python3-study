@@ -1,13 +1,6 @@
 # LC 979
 
 
-class TreeNode:
-    def __init__(self, val=0, left=None, right=None):
-        self.val = val
-        self.left = left
-        self.right = right
-
-
 class Solution:
     def distribute_coins(self, root):
         self.ans = 0
