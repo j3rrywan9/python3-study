@@ -1,5 +1,10 @@
+# macOS
 .DS_Store
+
+# PyCharm
 .idea/
+
+# Visual Studio Code
 .vscode
 
 # pytest
