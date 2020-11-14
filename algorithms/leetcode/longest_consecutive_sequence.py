@@ -1,8 +1,9 @@
 # LC 128
+from typing import List
 
 
 class Solution:
-    def longest_consecutive(self, nums):
+    def longest_consecutive(self, nums: List[int]) -> int:
         longest_streak = 0
         num_set = set(nums)
 
