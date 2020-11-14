@@ -1,8 +1,9 @@
 # LC 11
+from typing import List
 
 
 class Solution:
-    def max_area(self, height):
+    def max_area(self, height: List[int]) -> int:
         i, j, max_area = 0, len(height) - 1, 0
 
         while i < j:
