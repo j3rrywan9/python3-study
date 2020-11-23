@@ -2,7 +2,121 @@
 
 ## Object-Oriented Design
 
+In software development, design is often considered as the step done *before* programming.
+This isn't true;
+in reality, analysis, programming, and design tend to overlap, combine, and interweave.
+
+### Introducing object-oriented
+
+Formally, an object is a collection of **data** and associated **behaviors**.
+
+### Objects and classes
+
+Classes describe objects.
+They are like blueprints for creating an object.
+
+### Specifying attributes and behaviors
+
+### Hiding details and creating the public interface
+
+### Composition
+
+Composition is the act of collecting several objects together to create a new one.
+
+### Inheritance
+
+#### Inheritance provides abstraction
+
+#### Multiple inheritance
+
 ## Objects in Python
+
+### Creating Python classes
+
+#### Adding attributes
+
+In fact, we don't have to do anything special in the class definition.
+We can set arbitrary attributes on an instantiated object using dot notation:
+```python
+class Point:
+    pass
+
+p1 = Point()
+p2 = Point()
+
+p1.x = 5
+p1.y = 4
+
+p2.x = 3
+p2.y = 6
+
+print(p1.x, p1.y)
+print(p2.x, p2.y)
+```
+
+#### Making it do something
+
+##### Talking to yourself
+
+The one difference, syntactically, between methods and normal functions is that all methods have one required argument.
+This argument is conventionally named `self`;
+I've never seen a Python programmer use any other name for this variable (convention is a very powerful thing).
+
+The `self` argument to a method is a reference to the object that the method is being invoked on.
+We can access attributes and methods of that object as if it were any another object.
+
+##### More arguments
+
+#### Initializing the object
+
+Most object-oriented programming languages have the concept of a **constructor**, a special method that creates and initializes the object when it is created.
+Python is a little different; it has a constructor *and* an initializer.
+
+The Python initialization method is the same as any other method, except it has a special name, `__init__`.
+The leading and trailing double underscores mean this is a special method that the Python interpreter will treat as a special case.
+
+#### Explain yourself
+
+### Modules and packages
+
+For small programs, we can just put all our classes into one file and add a little script at the end of the file to start them interacting.
+However, as our projects grow, it can become difficult to find the one class that needs to be edited among the many classes we've defined.
+This is where **modules** come in.
+Modules are simply Python files, nothing more.
+The single file in our small program is a module.
+Two Python files are two modules.
+If we have two files in the same folder, we can load a class from one module for use in the other module.
+
+#### Organizing modules
+
+A **package** is a collection of modules in a folder.
+The name of the package is the name of the folder.
+We need to tell Python that a folder is a package to distinguish it from other folders in the directory.
+To do this, place a (normally empty) file in the folder named `__init__.py`.
+If we forget this file, we won't be able to import modules from that folder.
+
+### Organizing module content
+
+Every module has a `__name__` special variable that specifies the name of the module when it was imported.
+When the module is executed directly with `python module.py`, it is never imported, so the `__name__` is arbitrarily set to the `"__main__"` string.
+Make it a policy to wrap all your scripts in an `if __name__ == "__main__":` test, just in case you write a function that you may want to be imported by other code at some point in the future.
+
+### Who can access my data?
+
+By convention, we should also prefix an internal attribute or method with an underscore character, `_`.
+Python programmers will interpret this as this is an internal variable, think three times before accessing it directly.
+But there is nothing inside the interpreter to stop them from accessing it if they think it is in their best interest to do so.
+
+There's another thing you can do to strongly suggest that outside objects don't access a property or method: prefix it with a double underscore, `__`.
+This will perform **name mangling** on the attribute in question.
+In essence, name mangling means that the method can still be called by outside objects if they really want to do so, but it requires extra work and is a strong indicator that you demand that your attribute remains **private**.
+
+### Third-party libraries
+
+Instead, Python 3.4 (and higher) supplies the `venv` tool.
+This utility basically gives you a mini Python installation called a *virtual environment* in your working directory.
+When you activate the mini Python, commands related to Python will work on that directory instead of the system directory.
+So, when you run `pip` or `python`, it won't touch the system Python at all.
 
 ## When Objects Are Alike
 
